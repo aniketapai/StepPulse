@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/history_provider.dart';
-import '../../providers/step_provider.dart';
+import '../../providers/sync_manager.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -26,6 +28,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    // final storage = ref.watch(storageServiceProvider); // Unused
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -68,13 +71,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             // Content
             Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+              child: ListView(
+                // Use ClampingScrollPhysics for smoother, more controlled scrolling
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    // Goal section
-                    _buildSection(
+                // Higher cacheExtent preloads more items for smoother scrolling
+                cacheExtent: 1500,
+                addAutomaticKeepAlives: true,
+                children: [
+                  // Goal section
+                  RepaintBoundary(
+                    child: _buildSection(
                       context,
                       title: 'Daily Step Goal',
                       icon: Icons.flag_rounded,
@@ -82,26 +89,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           // Goal display
                           Text(
-                            '${_goalValue.round()}',
+                            _formatNumber(_goalValue.round()),
                             style: theme.textTheme.displayMedium?.copyWith(
                               fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'steps per day',
-                            style: theme.textTheme.bodyMedium,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                           const SizedBox(height: 24),
                           // Goal slider
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
-                              trackHeight: 8,
+                              trackHeight: 10,
                               thumbShape: const RoundSliderThumbShape(
-                                enabledThumbRadius: 12,
+                                enabledThumbRadius: 14,
                               ),
                               overlayShape: const RoundSliderOverlayShape(
-                                overlayRadius: 24,
+                                overlayRadius: 28,
+                              ),
+                              activeTrackColor: AppTheme.accentBlack,
+                              inactiveTrackColor: Colors.grey.shade200,
+                              thumbColor: AppTheme.accentBlack,
+                              overlayColor: AppTheme.accentBlack.withValues(
+                                alpha: 0.2,
                               ),
                             ),
                             child: Slider(
@@ -118,6 +134,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ref
                                     .read(settingsProvider.notifier)
                                     .setDailyGoal(value.round());
+                                // Sync to cloud (debounced)
+                                ref
+                                    .read(syncManagerProvider)
+                                    .onSettingsChanged();
                               },
                             ),
                           ),
@@ -129,11 +149,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               children: [
                                 Text(
                                   '${kMinGoal ~/ 1000}K',
-                                  style: theme.textTheme.labelSmall,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
                                 ),
                                 Text(
                                   '${kMaxGoal ~/ 1000}K',
-                                  style: theme.textTheme.labelSmall,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
                                 ),
                               ],
                             ),
@@ -141,73 +165,179 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ],
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // Units section
-                    _buildSection(
+                  // Body Measurements
+                  RepaintBoundary(
+                    child: _buildSection(
+                      context,
+                      title: 'Body Measurements',
+                      icon: Icons.accessibility_new_rounded,
+                      child: Column(
+                        children: [
+                          _buildMeasurementRow(
+                            context,
+                            title: 'Height',
+                            value: settings.useMetric
+                                ? '${settings.heightCm} cm'
+                                : '${(settings.heightCm / 2.54).toStringAsFixed(1)} in',
+                            onTap: () => _showHeightPicker(context),
+                          ),
+                          const Divider(height: 24),
+                          _buildMeasurementRow(
+                            context,
+                            title: 'Weight',
+                            value: settings.useMetric
+                                ? '${settings.weightKg} kg'
+                                : '${(settings.weightKg * 2.205).toStringAsFixed(1)} lbs',
+                            onTap: () => _showWeightPicker(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Units section
+                  RepaintBoundary(
+                    child: _buildSection(
                       context,
                       title: 'Units',
                       icon: Icons.straighten_rounded,
                       child: _buildSettingRow(
                         context,
                         title: 'Use Metric System',
-                        subtitle: settings.useMetric ? 'Kilometers' : 'Miles',
+                        subtitle: settings.useMetric
+                            ? 'Kilometers, cm, kg'
+                            : 'Miles, inches, lbs',
                         trailing: Switch(
                           value: settings.useMetric,
-                          onChanged: (value) {
-                            ref
+                          onChanged: (value) async {
+                            await ref
                                 .read(settingsProvider.notifier)
                                 .setUseMetric(value);
+                            // Sync to cloud (debounced)
+                            ref.read(syncManagerProvider).onSettingsChanged();
                           },
                           activeThumbColor: AppTheme.accentBlack,
-                          activeTrackColor: AppTheme.accentBlack,
+                          activeTrackColor: AppTheme.accentBlack.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // Data section
-                    _buildSection(
+                  // Premium (Remove Ads) section
+                  RepaintBoundary(
+                    child: _buildSection(
                       context,
-                      title: 'Data',
-                      icon: Icons.storage_rounded,
+                      title: 'Premium',
+                      icon: Icons.star_rounded,
                       child: Column(
                         children: [
-                          GestureDetector(
-                            onTap: () => _showResetTodayDialog(context),
-                            child: _buildSettingRow(
-                              context,
-                              title: 'Reset Today\'s Steps',
-                              subtitle: 'Start counting from 0 today',
-                              trailing: const Icon(
-                                Icons.refresh_rounded,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 24),
-                          GestureDetector(
-                            onTap: () => _showClearHistoryDialog(context),
-                            child: _buildSettingRow(
-                              context,
-                              title: 'Clear History',
-                              subtitle: 'Delete all step history data',
-                              trailing: const Icon(
-                                Icons.chevron_right_rounded,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
+                          _buildSettingRow(
+                            context,
+                            title: ref.watch(premiumProvider)
+                                ? 'You are Premium!'
+                                : 'Remove Ads',
+                            subtitle: ref.watch(premiumProvider)
+                                ? 'Enjoy ad-free experience'
+                                : 'Get rid of all advertisements',
+                            trailing: ref.watch(premiumProvider)
+                                ? const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Colors.green,
+                                  )
+                                : ElevatedButton(
+                                    onPressed: () => _showPurchaseDialog(),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.accentBlack,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
+                                      ),
+                                    ),
+                                    child: const Text('Upgrade'),
+                                  ),
                           ),
                         ],
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // About section
-                    _buildSection(
+                  // Account section
+                  RepaintBoundary(
+                    child: _buildSection(
+                      context,
+                      title: 'Account',
+                      icon: Icons.account_circle_rounded,
+                      child: GestureDetector(
+                        onTap: () => _handleSignOut(),
+                        child: _buildSettingRow(
+                          context,
+                          title: 'Sign Out',
+                          subtitle: 'Sign out of your account',
+                          trailing: const Icon(
+                            Icons.logout_rounded,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const SizedBox(height: 16),
+
+                  const SizedBox(height: 16),
+
+                  // FAQ section
+                  RepaintBoundary(
+                    child: _buildSection(
+                      context,
+                      title: 'FAQ',
+                      icon: Icons.help_outline_rounded,
+                      child: Column(
+                        children: [
+                          _buildExpandableFaq(
+                            'How accurate is step counting?',
+                            'StepPulse uses your device\'s built-in step counter sensor (pedometer), which is typically 95-99% accurate for normal walking. Accuracy may vary based on phone placement and walking style.',
+                          ),
+                          const Divider(height: 16),
+                          _buildExpandableFaq(
+                            'How is XP calculated?',
+                            'You earn 1 XP for every 100 steps walked. Additionally, you get +50 XP bonus when you hit your daily goal, and +10 XP per day for maintaining a streak.',
+                          ),
+                          const Divider(height: 16),
+                          _buildExpandableFaq(
+                            'Why did my steps reset?',
+                            'Steps reset automatically at midnight each day. Your previous day\'s steps are saved to your history. If you reboot your phone, the step counter resets but StepPulse preserves your daily progress.',
+                          ),
+                          const Divider(height: 16),
+                          _buildExpandableFaq(
+                            'Does the app work in background?',
+                            'Yes! StepPulse runs a foreground service to count your steps even when the app is closed. You\'ll see a notification showing your current step count.',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // About section
+                  RepaintBoundary(
+                    child: _buildSection(
                       context,
                       title: 'About',
                       icon: Icons.info_outline_rounded,
@@ -221,16 +351,111 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const Divider(height: 24),
                           Text(
-                            'StepPulse uses your device\'s built-in step counter sensor to accurately track your daily steps.',
-                            style: theme.textTheme.bodySmall,
+                            'Track your steps, earn XP, and achieve your fitness goals with StepPulse. A gamified step counter that makes walking fun!',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
                           ),
                         ],
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 32),
-                  ],
-                ),
+                  const SizedBox(height: 16),
+
+                  // Developer section
+                  RepaintBoundary(
+                    child: _buildSection(
+                      context,
+                      title: 'Developer',
+                      icon: Icons.code_rounded,
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentBlack,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.person_rounded,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Aniket Pai',
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            color: AppTheme.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    Text(
+                                      'Mobile App Developer',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          GestureDetector(
+                            onTap: () =>
+                                _launchUrl('https://github.com/aniketapai'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.mintBackground,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.link_rounded,
+                                    size: 20,
+                                    color: AppTheme.accentBlack,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'github.com/aniketapai',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.accentBlack,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Icon(
+                                    Icons.open_in_new_rounded,
+                                    size: 18,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                ],
               ),
             ),
           ],
@@ -239,7 +464,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  /// Build a settings section
   Widget _buildSection(
     BuildContext context, {
     required String title,
@@ -293,9 +517,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: theme.textTheme.titleSmall),
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: AppTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(subtitle, style: theme.textTheme.bodySmall),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -304,85 +538,447 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  /// Show dialog to confirm clearing history
-  void _showClearHistoryDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Clear History?'),
-        content: const Text(
-          'This will permanently delete all your step history data. This action cannot be undone.',
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+  Widget _buildMeasurementRow(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Expanded(
             child: Text(
-              'Cancel',
-              style: TextStyle(color: AppTheme.textSecondary),
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: AppTheme.textPrimary,
+              ),
             ),
           ),
-          TextButton(
-            onPressed: () {
-              ref.read(historyProvider.notifier).clearHistory();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('History cleared'),
-                  backgroundColor: AppTheme.accentBlack,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              );
-            },
-            child: const Text('Clear', style: TextStyle(color: Colors.red)),
+          Text(
+            value,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: AppTheme.accentBlack,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.chevron_right_rounded,
+            color: AppTheme.textSecondary,
+            size: 20,
           ),
         ],
       ),
     );
   }
 
-  /// Show dialog to confirm resetting today's steps
-  void _showResetTodayDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('Reset Today\'s Steps?'),
-        content: const Text(
-          'This will reset your step count to 0 for today. The current sensor value will become your new baseline.',
+  Widget _buildExpandableFaq(String question, String answer) {
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: const EdgeInsets.only(bottom: 8),
+        title: Text(
+          question,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(color: AppTheme.textPrimary),
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppTheme.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(stepProvider.notifier).resetToday();
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Today\'s steps reset to 0'),
-                  backgroundColor: AppTheme.accentBlack,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              );
-            },
-            child: const Text('Reset', style: TextStyle(color: Colors.orange)),
+        iconColor: AppTheme.textSecondary,
+        collapsedIconColor: AppTheme.textSecondary,
+        children: [
+          Text(
+            answer,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
           ),
         ],
       ),
+    );
+  }
+
+  void _showHeightPicker(BuildContext context) {
+    final storage = ref.read(storageServiceProvider);
+    final settings = ref.read(settingsProvider);
+    int heightCm = storage.heightCm;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Height',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                settings.useMetric
+                    ? '$heightCm cm'
+                    : '${(heightCm / 2.54).toStringAsFixed(1)} in',
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Slider(
+                value: heightCm.toDouble(),
+                min: 100,
+                max: 250,
+                divisions: 150,
+                activeColor: AppTheme.accentBlack,
+                onChanged: (value) {
+                  setSheetState(() => heightCm = value.round());
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(settingsProvider.notifier).setHeightCm(heightCm);
+                    // Sync to cloud (debounced)
+                    ref.read(syncManagerProvider).onSettingsChanged();
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentBlack,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showWeightPicker(BuildContext context) {
+    final storage = ref.read(storageServiceProvider);
+    final settings = ref.read(settingsProvider);
+    int weightKg = storage.weightKg;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Weight',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                settings.useMetric
+                    ? '$weightKg kg'
+                    : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Slider(
+                value: weightKg.toDouble(),
+                min: 30,
+                max: 200,
+                divisions: 170,
+                activeColor: AppTheme.accentBlack,
+                onChanged: (value) {
+                  setSheetState(() => weightKg = value.round());
+                },
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    ref.read(settingsProvider.notifier).setWeightKg(weightKg);
+                    // Sync to cloud (debounced)
+                    ref.read(syncManagerProvider).onSettingsChanged();
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentBlack,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _handleSignOut() async {
+    final shouldSignOut = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Sign Out?',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'You will need to sign in again to access your account.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade50,
+                  foregroundColor: Colors.red,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Sign Out',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+
+    if (shouldSignOut == true && mounted) {
+      // 1. Sign out from Firebase/Google
+      final auth = ref.read(authServiceProvider);
+      await auth.signOut();
+
+      // 2. Update local storage state
+      final storage = ref.read(storageServiceProvider);
+      // We set onboarding to false so the app routes to OnboardingScreen on restart
+      await storage.setOnboardingComplete(false);
+
+      // 3. Navigate to Onboarding
+      if (mounted) {
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
+      }
+    }
+  }
+
+  void _showPurchaseDialog() {
+    final theme = Theme.of(context);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Star icon
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.amber.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.star_rounded,
+                size: 40,
+                color: Colors.amber,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Title
+            Text(
+              'Go Premium',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Remove all ads and enjoy an uninterrupted experience',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Price (Test)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.mintBackground,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '₹99 / Lifetime (Test)',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Purchase button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () async {
+                  // Simulate purchase
+                  await ref.read(premiumProvider.notifier).purchasePremium();
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('🎉 You are now Premium!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentBlack,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Purchase (Test)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Restore button
+            TextButton(
+              onPressed: () {
+                ref.read(premiumProvider.notifier).restorePurchase();
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Restore Purchase',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatNumber(int number) {
+    return number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
     );
   }
 }

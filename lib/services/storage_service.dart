@@ -251,4 +251,17 @@ class StorageService {
   Future<void> setOnboardingComplete(bool value) async {
     await _settingsBox.put(_onboardingCompleteKey, value);
   }
+
+  // ============ Premium (Ad-Free) ============
+
+  static const String _premiumKey = 'is_premium';
+
+  /// Check if user is premium (ad-free)
+  bool get isPremium =>
+      _settingsBox.get(_premiumKey, defaultValue: false) as bool;
+
+  /// Set premium status
+  Future<void> setPremium(bool value) async {
+    await _settingsBox.put(_premiumKey, value);
+  }
 }

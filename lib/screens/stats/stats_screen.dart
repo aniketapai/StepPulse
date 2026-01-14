@@ -9,11 +9,79 @@ import '../../providers/step_provider.dart';
 import '../../models/step_data.dart';
 
 /// Stats screen content (for use in nav shell)
-class StatsContent extends ConsumerWidget {
+class StatsContent extends ConsumerStatefulWidget {
   const StatsContent({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<StatsContent> createState() => _StatsContentState();
+}
+
+class _StatsContentState extends ConsumerState<StatsContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late List<Animation<double>> _fadeAnimations;
+  late List<Animation<Offset>> _slideAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    // Create staggered animations for 5 elements
+    _fadeAnimations = List.generate(5, (index) {
+      final start = index * 0.12;
+      final end = start + 0.4;
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _animController,
+          curve: Interval(
+            start.clamp(0.0, 1.0),
+            end.clamp(0.0, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _slideAnimations = List.generate(5, (index) {
+      final start = index * 0.12;
+      final end = start + 0.4;
+      return Tween<Offset>(
+        begin: const Offset(0, 0.1),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: _animController,
+          curve: Interval(
+            start.clamp(0.0, 1.0),
+            end.clamp(0.0, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _animController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildAnimatedChild(int index, Widget child) {
+    return FadeTransition(
+      opacity: _fadeAnimations[index],
+      child: SlideTransition(position: _slideAnimations[index], child: child),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final history = ref.watch(historyProvider);
     final settings = ref.watch(settingsProvider);
     final stepState = ref.watch(stepProvider);
@@ -59,7 +127,8 @@ class StatsContent extends ConsumerWidget {
 
     return SafeArea(
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        // ClampingScrollPhysics for smoother, more predictable scrolling
+        physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -67,126 +136,139 @@ class StatsContent extends ConsumerWidget {
             children: [
               const SizedBox(height: 20),
 
-              // Title
-              Center(
-                child: Text(
-                  'Statistics',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textPrimary,
+              // Title - animated
+              _buildAnimatedChild(
+                0,
+                Center(
+                  child: Text(
+                    'Statistics',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Weekly Graph Card
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: AppTheme.cardDecoration,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'This Week',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimary,
+              // Weekly Graph Card - animated
+              _buildAnimatedChild(
+                1,
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: AppTheme.cardDecoration,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'This Week',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      height: 200,
-                      child: weeklyData.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.show_chart_rounded,
-                                    size: 48,
-                                    color: AppTheme.textSecondary.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No activity yet',
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Start walking to see your chart!',
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        height: 200,
+                        child: weeklyData.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.show_chart_rounded,
+                                      size: 48,
                                       color: AppTheme.textSecondary.withValues(
-                                        alpha: 0.7,
+                                        alpha: 0.5,
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      'No activity yet',
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Start walking to see your chart!',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: AppTheme.textSecondary
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _buildLineChart(
+                                weeklyData,
+                                settings.dailyGoal,
+                                theme,
                               ),
-                            )
-                          : _buildLineChart(
-                              weeklyData,
-                              settings.dailyGoal,
-                              theme,
-                            ),
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 20),
 
-              // Stats Grid
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      title: 'Total Steps',
-                      value: _formatNumber(totalSteps),
-                      subtitle: 'all time',
-                      icon: Icons.directions_walk_rounded,
+              // Stats Grid - animated
+              _buildAnimatedChild(
+                2,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        title: 'Total Steps',
+                        value: _formatNumber(totalSteps),
+                        subtitle: 'all time',
+                        icon: Icons.directions_walk_rounded,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      title: 'Average',
-                      value: _formatNumber(avgSteps),
-                      subtitle: 'per day',
-                      icon: Icons.analytics_rounded,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        title: 'Average',
+                        value: _formatNumber(avgSteps),
+                        subtitle: 'per day',
+                        icon: Icons.analytics_rounded,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 12),
 
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      title: 'Best Day',
-                      value: _formatNumber(bestDaySteps),
-                      subtitle: bestDayLabel,
-                      icon: Icons.emoji_events_rounded,
+              _buildAnimatedChild(
+                3,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        title: 'Best Day',
+                        value: _formatNumber(bestDaySteps),
+                        subtitle: bestDayLabel,
+                        icon: Icons.emoji_events_rounded,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      title: 'Goals Hit',
-                      value: daysWithGoal.toString(),
-                      subtitle: 'of ${history.length} days',
-                      icon: Icons.flag_rounded,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        context,
+                        title: 'Goals Hit',
+                        value: daysWithGoal.toString(),
+                        subtitle: 'of ${history.length} days',
+                        icon: Icons.flag_rounded,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),

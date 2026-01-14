@@ -25,7 +25,8 @@ class DashboardScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(color: AppTheme.accentBlack),
               )
             : SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                // ClampingScrollPhysics for smoother, more controlled scrolling
+                physics: const ClampingScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
@@ -167,8 +168,7 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 100), // Space for bottom nav
+                      const SizedBox(height: 160), // Space for bottom nav + ad
                     ],
                   ),
                 ),

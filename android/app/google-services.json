@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "36770486578",
+    "project_id": "steppulse-50ed1",
+    "storage_bucket": "steppulse-50ed1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:36770486578:android:1c19345da16e1858389f2b",
+        "android_client_info": {
+          "package_name": "com.example.flutter_steps_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "36770486578-e7d3qva6g95q85la5qpjprg4a477iou5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.flutter_steps_app",
+            "certificate_hash": "d19040768395cd83d3b76fc91b110b3d48da34a9"
+          }
+        },
+        {
+          "client_id": "36770486578-55p7hrdiuhicu9jnt2nvf59ogbgl9t65.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6vojOwbw5SIY6IijK5r0ieT1kEhKDGCE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "36770486578-55p7hrdiuhicu9jnt2nvf59ogbgl9t65.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

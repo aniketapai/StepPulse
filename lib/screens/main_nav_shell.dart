@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
+import '../providers/step_provider.dart';
+import '../providers/history_provider.dart';
 import 'dashboard/dashboard_content.dart';
 import 'stats/stats_screen.dart';
 import 'progress/progress_content.dart';
@@ -22,25 +25,85 @@ class MainNavShell extends ConsumerStatefulWidget {
   ConsumerState<MainNavShell> createState() => _MainNavShellState();
 }
 
-class _MainNavShellState extends ConsumerState<MainNavShell> {
+class _MainNavShellState extends ConsumerState<MainNavShell>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // Register to listen for app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
+    // Check for day change immediately on mount
+    _checkForDayChange();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // When app resumes from background, check if day has changed
+    if (state == AppLifecycleState.resumed) {
+      _checkForDayChange();
+    }
+  }
+
+  /// Check if the day has changed since last check
+  Future<void> _checkForDayChange() async {
+    final dayChanged = await ref
+        .read(stepProvider.notifier)
+        .checkForDayChange();
+    if (dayChanged) {
+      // Refresh history to show updated data
+      ref.read(historyProvider.notifier).refresh();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
-      // IndexedStack = instant switching, all screens stay mounted
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [
-          DashboardContent(),
-          StatsContent(),
-          ProgressContent(),
-          ProfileContent(),
-        ],
+    // Force status bar color to match mint background
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: AppTheme.mintBackground,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
-      bottomNavigationBar: _buildBottomNav(),
+      child: Scaffold(
+        backgroundColor: AppTheme.mintBackground,
+        // Use AnimatedSwitcher for smooth fade transitions between tabs
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          switchInCurve: Curves.easeOutExpo,
+          switchOutCurve: Curves.easeInExpo,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: _buildCurrentScreen(),
+        ),
+        bottomNavigationBar: _buildBottomNav(),
+      ),
     );
+  }
+
+  /// Build current screen with unique key for AnimatedSwitcher
+  Widget _buildCurrentScreen() {
+    switch (_currentIndex) {
+      case 0:
+        return const DashboardContent(key: ValueKey('dashboard'));
+      case 1:
+        return const StatsContent(key: ValueKey('stats'));
+      case 2:
+        return const ProgressContent(key: ValueKey('progress'));
+      case 3:
+        return const ProfileContent(key: ValueKey('profile'));
+      default:
+        return const DashboardContent(key: ValueKey('dashboard'));
+    }
   }
 
   Widget _buildBottomNav() {
@@ -111,8 +174,8 @@ class _NavItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: isSelected ? 1 : 0),
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutExpo,
         builder: (context, value, child) {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

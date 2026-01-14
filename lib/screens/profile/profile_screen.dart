@@ -5,10 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/xp_provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../providers/history_provider.dart';
-import '../../providers/step_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/sync_manager.dart';
 import '../../models/xp_data.dart';
-import '../../services/foreground_service.dart';
 
 /// Enhanced Profile screen content (for use in nav shell)
 class ProfileContent extends ConsumerStatefulWidget {
@@ -18,9 +17,15 @@ class ProfileContent extends ConsumerStatefulWidget {
   ConsumerState<ProfileContent> createState() => _ProfileContentState();
 }
 
-class _ProfileContentState extends ConsumerState<ProfileContent> {
+class _ProfileContentState extends ConsumerState<ProfileContent>
+    with TickerProviderStateMixin {
   final _nameController = TextEditingController();
   bool _isEditingName = false;
+
+  // Animation controllers
+  late AnimationController _animController;
+  late List<Animation<double>> _fadeAnimations;
+  late List<Animation<Offset>> _slideAnimations;
 
   @override
   void initState() {
@@ -29,12 +34,61 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
       final storage = ref.read(storageServiceProvider);
       _nameController.text = storage.profileName;
     });
+
+    // Set up staggered animations for 5 elements
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimations = List.generate(5, (index) {
+      final start = index * 0.12;
+      final end = start + 0.4;
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _animController,
+          curve: Interval(
+            start.clamp(0.0, 1.0),
+            end.clamp(0.0, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _slideAnimations = List.generate(5, (index) {
+      final start = index * 0.12;
+      final end = start + 0.4;
+      return Tween<Offset>(
+        begin: const Offset(0, 0.1),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: _animController,
+          curve: Interval(
+            start.clamp(0.0, 1.0),
+            end.clamp(0.0, 1.0),
+            curve: Curves.easeOut,
+          ),
+        ),
+      );
+    });
+
+    _animController.forward();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _animController.dispose();
     super.dispose();
+  }
+
+  Widget _buildAnimatedChild(int index, Widget child) {
+    return FadeTransition(
+      opacity: _fadeAnimations[index],
+      child: SlideTransition(position: _slideAnimations[index], child: child),
+    );
   }
 
   @override
@@ -42,6 +96,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     final xp = ref.watch(xpProvider);
     final storage = ref.watch(storageServiceProvider);
     final theme = Theme.of(context);
+    final isGoogleUser = ref.read(authServiceProvider).isGoogleUser;
 
     // Parse member since date for display
     final memberSince = storage.memberSince;
@@ -50,136 +105,176 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
 
     return SafeArea(
       child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        // ClampingScrollPhysics for smoother, more controlled scrolling
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
             const SizedBox(height: 20),
 
-            // Title
-            Text(
-              'Profile',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: AppTheme.textPrimary,
+            // Title with Settings icon - animated
+            _buildAnimatedChild(
+              0,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(width: 44), // Balance for the settings icon
+                  Expanded(
+                    child: Text(
+                      'Profile',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/settings'),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.settings_rounded,
+                        size: 20,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 24),
 
-            // Profile Card with Avatar and Name
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: AppTheme.cardDecoration,
-              child: Column(
-                children: [
-                  // Avatar
-                  GestureDetector(
-                    onTap: _pickProfilePhoto,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentBlack,
-                            shape: BoxShape.circle,
-                            image: storage.profilePhotoPath != null
-                                ? DecorationImage(
-                                    image: FileImage(
-                                      File(storage.profilePhotoPath!),
-                                    ),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
-                          ),
-                          child: storage.profilePhotoPath == null
-                              ? const Icon(
-                                  Icons.person_rounded,
-                                  color: Colors.white,
-                                  size: 50,
-                                )
-                              : null,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
+            // Profile Card with Avatar and Name - animated
+            _buildAnimatedChild(
+              1,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: AppTheme.cardDecoration,
+                child: Column(
+                  children: [
+                    // Avatar
+                    GestureDetector(
+                      onTap: isGoogleUser ? null : _pickProfilePhoto,
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
                             decoration: BoxDecoration(
                               color: AppTheme.accentBlack,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              image: storage.profilePhotoPath != null
+                                  ? DecorationImage(
+                                      image: FileImage(
+                                        File(storage.profilePhotoPath!),
+                                      ),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
-                            child: const Icon(
-                              Icons.camera_alt_rounded,
-                              color: Colors.white,
-                              size: 14,
-                            ),
+                            child: storage.profilePhotoPath == null
+                                ? const Icon(
+                                    Icons.person_rounded,
+                                    color: Colors.white,
+                                    size: 50,
+                                  )
+                                : null,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Editable Name
-                  _isEditingName
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 150,
-                              child: TextField(
-                                controller: _nameController,
-                                textAlign: TextAlign.center,
-                                autofocus: true,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.textPrimary,
+                          if (!isGoogleUser)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accentBlack,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
-                                decoration: const InputDecoration(
-                                  border: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
+                                child: const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                  size: 14,
                                 ),
-                                onSubmitted: (_) => _saveName(),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.check_rounded),
-                              color: AppTheme.accentBlack,
-                              onPressed: _saveName,
-                            ),
-                          ],
-                        )
-                      : GestureDetector(
-                          onTap: () => setState(() => _isEditingName = true),
-                          child: Row(
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Editable Name
+                    _isEditingName
+                        ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                storage.profileName,
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.textPrimary,
-                                  fontWeight: FontWeight.w600,
+                              SizedBox(
+                                width: 150,
+                                child: TextField(
+                                  controller: _nameController,
+                                  textAlign: TextAlign.center,
+                                  autofocus: true,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                  onSubmitted: (_) => _saveName(),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                Icons.edit_rounded,
-                                size: 16,
-                                color: AppTheme.textSecondary,
+                              IconButton(
+                                icon: const Icon(Icons.check_rounded),
+                                color: AppTheme.accentBlack,
+                                onPressed: _saveName,
                               ),
                             ],
+                          )
+                        : GestureDetector(
+                            onTap: isGoogleUser
+                                ? null
+                                : () => setState(() => _isEditingName = true),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  storage.profileName,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: AppTheme.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (!isGoogleUser) ...[
+                                  const SizedBox(width: 8),
+                                  Icon(
+                                    Icons.edit_rounded,
+                                    size: 16,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                        ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Member for $memberDays days',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Member for $memberDays days',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -393,61 +488,10 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Danger Zone - Reset Progress
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.warning_rounded,
-                        color: Colors.red.shade400,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Danger Zone',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: Colors.red.shade400,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Reset all your progress including XP, levels, streaks, and history. Your profile info will be kept.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _confirmResetProgress(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red.shade400,
-                        side: BorderSide(color: Colors.red.shade400),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      icon: const Icon(Icons.restart_alt_rounded),
-                      label: const Text('Reset All Progress'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // BMI Card
+            _buildBmiCard(context, storage),
 
             const SizedBox(height: 120), // Space for nav bar
           ],
@@ -593,6 +637,10 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     if (image != null) {
       final storage = ref.read(storageServiceProvider);
       await storage.setProfilePhotoPath(image.path);
+
+      // Sync change to cloud (debounced)
+      ref.read(syncManagerProvider).onSettingsChanged();
+
       setState(() {});
     }
   }
@@ -602,64 +650,254 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     if (name.isNotEmpty) {
       final storage = ref.read(storageServiceProvider);
       storage.setProfileName(name);
+
+      // Sync change to cloud (debounced)
+      ref.read(syncManagerProvider).onSettingsChanged();
     }
     setState(() => _isEditingName = false);
   }
 
-  Future<void> _confirmResetProgress(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset Everything?'),
-        content: const Text(
-          'This will permanently delete:\n'
-          '• All XP and levels\n'
-          '• All streaks\n'
-          '• All step history\n'
-          '• Your profile info\n'
-          '• All settings\n'
-          '• Stop background tracking\n\n'
-          'Note: App permissions cannot be revoked by the app.\n'
-          'You\'ll be taken back to onboarding.\n\n'
-          'This action cannot be undone!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+  Widget _buildBmiCard(BuildContext context, storage) {
+    final theme = Theme.of(context);
+    final settings = ref.watch(settingsProvider);
+    final heightCm = settings.heightCm;
+    final weightKg = settings.weightKg;
+
+    // Calculate BMI using settings state (reactive)
+    final bmi = settings.bmi;
+
+    // Get BMI category
+    String category;
+    Color categoryColor;
+    if (bmi < 18.5) {
+      category = 'Underweight';
+      categoryColor = Colors.blue;
+    } else if (bmi < 25) {
+      category = 'Normal';
+      categoryColor = Colors.green;
+    } else if (bmi < 30) {
+      category = 'Overweight';
+      categoryColor = Colors.orange;
+    } else {
+      category = 'Obese';
+      categoryColor = Colors.red;
+    }
+
+    // BMI position on scale (15-40 range mapped to 0-1)
+    final bmiPosition = ((bmi - 15) / 25).clamp(0.0, 1.0);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: AppTheme.cardDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.mintBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.monitor_weight_rounded,
+                  color: AppTheme.textPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Body Mass Index',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Reset Everything'),
+          const SizedBox(height: 20),
+
+          // BMI Value and Category
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                bmi.toStringAsFixed(1),
+                style: theme.textTheme.displayMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: categoryColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  category,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: categoryColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // BMI Scale
+          Stack(
+            children: [
+              // Background gradient bar
+              Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Colors.blue,
+                      Colors.green,
+                      Colors.yellow,
+                      Colors.orange,
+                      Colors.red,
+                    ],
+                  ),
+                ),
+              ),
+              // Position indicator
+              Positioned(
+                left:
+                    bmiPosition * (MediaQuery.of(context).size.width - 80) - 8,
+                top: -4,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: categoryColor, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Scale labels
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '15',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Text(
+                '18.5',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Text(
+                '25',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Text(
+                '30',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              Text(
+                '40',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Height/Weight info
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.mintBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.height_rounded,
+                        color: AppTheme.textSecondary,
+                        size: 20,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        settings.useMetric
+                            ? '$heightCm cm'
+                            : '${(heightCm / 2.54).toStringAsFixed(1)} in',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.mintBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.monitor_weight_outlined,
+                        color: AppTheme.textSecondary,
+                        size: 20,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        settings.useMetric
+                            ? '$weightKg kg'
+                            : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
-
-    if (confirmed == true) {
-      if (!mounted) return;
-
-      final storage = ref.read(storageServiceProvider);
-
-      // Stop background service
-      await ForegroundStepService().stop();
-
-      // Clear ALL data from storage
-      await storage.clearAllData();
-
-      // Reset all provider states to clear in-memory cache
-      ref.read(xpProvider.notifier).reset();
-      ref.read(historyProvider.notifier).clearHistory();
-      ref.read(stepProvider.notifier).resetToday();
-      ref.read(settingsProvider.notifier).resetSettings();
-
-      if (!context.mounted) return;
-
-      // Navigate to onboarding and clear navigation stack
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
-    }
   }
 }

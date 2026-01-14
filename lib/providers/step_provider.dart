@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import '../services/foreground_service.dart';
 import '../services/smart_notifications.dart';
 import 'settings_provider.dart';
+import 'sync_manager.dart';
 
 /// State for step tracking
 class StepState {
@@ -79,10 +80,12 @@ class StepState {
 class StepNotifier extends StateNotifier<StepState> {
   final StepService _stepService;
   final StorageService _storage;
+  final SyncManager? _syncManager;
   StreamSubscription<int>? _stepSubscription;
   Timer? _midnightTimer;
 
-  StepNotifier(this._stepService, this._storage) : super(const StepState()) {
+  StepNotifier(this._stepService, this._storage, [this._syncManager])
+    : super(const StepState()) {
     _initialize();
   }
 
@@ -229,6 +232,9 @@ class StepNotifier extends StateNotifier<StepState> {
 
     // Check for smart notifications
     _checkSmartNotifications();
+
+    // Trigger cloud sync at milestones (optimized for scale)
+    _syncManager?.onStepsChanged(todaySteps, _storage.dailyGoal);
   }
 
   /// Sync step data with foreground service notification
@@ -245,9 +251,15 @@ class StepNotifier extends StateNotifier<StepState> {
     final previousDate = state.currentDate;
     final today = StorageService.getTodayDateString();
 
+    // Calculate previous day's steps from stored values (not volatile state!)
+    // This is important because state.todaySteps may be stale when app resumes
+    final storedBaseline = _storage.baselineSteps;
+    final storedRawSteps = _storage.lastRawSteps;
+    final previousDaySteps = storedRawSteps - storedBaseline;
+
     // Save previous day's steps to history
-    if (previousDate.isNotEmpty && state.todaySteps > 0) {
-      await _storage.saveStepsForDate(previousDate, state.todaySteps);
+    if (previousDate.isNotEmpty && previousDaySteps > 0) {
+      await _storage.saveStepsForDate(previousDate, previousDaySteps);
     }
 
     // Reset live XP tracking for the new day
@@ -264,6 +276,9 @@ class StepNotifier extends StateNotifier<StepState> {
       rawSteps: currentRawSteps,
       todaySteps: 0,
     );
+
+    // Reset sync manager daily tracking
+    _syncManager?.resetDailyTracking();
 
     // Reschedule midnight timer
     _scheduleMidnightReset();
@@ -325,6 +340,21 @@ class StepNotifier extends StateNotifier<StepState> {
     }
   }
 
+  /// Check if day has changed and handle the transition
+  /// This should be called when the app resumes from background
+  Future<bool> checkForDayChange() async {
+    final today = StorageService.getTodayDateString();
+
+    // If it's still the same day, nothing to do
+    if (state.currentDate == today || state.currentDate.isEmpty) {
+      return false;
+    }
+
+    // Day has changed! Handle the transition
+    await _handleDayChange(state.rawSteps);
+    return true;
+  }
+
   /// Reset today's steps (for testing)
   Future<void> resetToday() async {
     final rawSteps = state.rawSteps;
@@ -346,9 +376,18 @@ final stepServiceProvider = Provider<StepService>((ref) {
   return StepService();
 });
 
-/// Provider for step state
+/// Provider for step state (with sync manager integration)
 final stepProvider = StateNotifierProvider<StepNotifier, StepState>((ref) {
   final stepService = ref.watch(stepServiceProvider);
   final storage = ref.watch(storageServiceProvider);
-  return StepNotifier(stepService, storage);
+
+  // Try to get sync manager, but don't fail if unavailable
+  SyncManager? syncManager;
+  try {
+    syncManager = ref.watch(syncManagerProvider);
+  } catch (_) {
+    // Sync manager not available (e.g., during initialization)
+  }
+
+  return StepNotifier(stepService, storage, syncManager);
 });

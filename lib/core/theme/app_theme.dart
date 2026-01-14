@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// App theme configuration for StepPulse
@@ -53,6 +54,11 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: mintBackground,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
         titleTextStyle: GoogleFonts.inter(
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -290,4 +296,56 @@ class AppTheme {
 
   /// Soft colored card backgrounds
   static List<Color> get softColors => [softPink, softMint, softBlue];
+
+  // ========== ANIMATION CONSTANTS ==========
+
+  /// Standard page transition duration - slower for premium feel
+  static const Duration pageTransitionDuration = Duration(milliseconds: 500);
+
+  /// Content entrance animation duration
+  static const Duration contentAnimationDuration = Duration(milliseconds: 600);
+
+  /// Stagger delay between items
+  static const Duration staggerDelay = Duration(milliseconds: 60);
+
+  /// Standard animation curve - ease out expo for slow-to-fast premium feel
+  static const Curve animationCurve = Curves.easeOutExpo;
+
+  /// Custom page route with smooth fade + slide transition
+  static PageRouteBuilder<T> smoothPageRoute<T>({
+    required Widget page,
+    RouteSettings? settings,
+  }) {
+    return PageRouteBuilder<T>(
+      settings: settings,
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionDuration: pageTransitionDuration,
+      reverseTransitionDuration: pageTransitionDuration,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Use different curves for enter vs exit for natural feel
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutExpo,
+          reverseCurve: Curves.easeInExpo,
+        );
+
+        // Fade + subtle scale + slide for premium feel
+        return FadeTransition(
+          opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+            ),
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.03),
+              end: Offset.zero,
+            ).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
 }

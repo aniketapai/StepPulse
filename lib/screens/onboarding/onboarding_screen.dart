@@ -1,13 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:image_picker/image_picker.dart';
+
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/step_provider.dart';
 import '../../services/foreground_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/firestore_provider.dart';
 
 /// Onboarding screen with multiple steps
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -29,11 +30,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   // Collected data
   int _selectedGoal = 8000;
-  String _userName = '';
-  String? _profilePhotoPath;
+  int _heightCm = 170;
+  int _weightKg = 70;
+  bool _useMetric = true;
   bool _permissionGranted = false;
-
-  final _nameController = TextEditingController();
+  bool _isSigningIn = false;
 
   @override
   void initState() {
@@ -63,7 +64,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   @override
   void dispose() {
     _pageController.dispose();
-    _nameController.dispose();
     _contentAnimationController.dispose();
     super.dispose();
   }
@@ -75,7 +75,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // Animated header with back button
+            // Animated header with back button - HIDDEN for simplicity in this flow
+            /*
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
@@ -109,15 +110,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(4, (index) {
+                      children: List.generate(2, (index) { // Reduced to 2 steps primarily
                         final isActive = index <= _currentPage;
                         final isCurrent = index == _currentPage;
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeOutCubic,
-                          width: isCurrent ? 48 : 32,
+                          width: isCurrent ? 40 : 24,
                           height: 4,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
                             color: isActive
                                 ? AppTheme.accentBlack
@@ -132,6 +133,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 ],
               ),
             ),
+            */
+            const SizedBox(height: 20),
 
             // Pages with animated content
             Expanded(
@@ -140,10 +143,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (page) => setState(() => _currentPage = page),
                 children: [
-                  _buildAnimatedPage(_buildWelcomePage()),
-                  _buildAnimatedPage(_buildGoalPage()),
-                  _buildAnimatedPage(_buildPermissionPage()),
-                  _buildAnimatedPage(_buildProfilePage()),
+                  _buildAnimatedPage(_buildSignInPage()),
+                  if (!_permissionGranted)
+                    _buildAnimatedPage(_buildPermissionPage()),
+                  if (!_permissionGranted)
+                    _buildAnimatedPage(
+                      _buildGoalPage(),
+                    ), // Only show if we need basic setup
+                  if (!_permissionGranted)
+                    _buildAnimatedPage(_buildBodyMeasurementsPage()),
                 ],
               ),
             ),
@@ -161,61 +169,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  // Page 1: Welcome
-  Widget _buildWelcomePage() {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // App icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppTheme.accentBlack,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Icon(
-              Icons.directions_walk_rounded,
-              color: Colors.white,
-              size: 60,
-            ),
-          ),
-          const SizedBox(height: 40),
-
-          Text(
-            'Welcome to\nStepPulse',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Track your steps, earn XP, and\nachieve your fitness goals',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
-          ),
-
-          const Spacer(),
-
-          _buildNextButton('Get Started', () => _nextPage()),
-
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  // Page 2: Goal Selection
+  // Page 2: Goal Selection with Slider
   Widget _buildGoalPage() {
     final theme = Theme.of(context);
-    final goals = [5000, 8000, 10000, 12000, 15000];
+    const minGoal = 2000;
+    const maxGoal = 20000;
 
     return Padding(
       padding: const EdgeInsets.all(32),
@@ -235,71 +193,104 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'How many steps do you want to walk each day?',
+            'Slide to choose your daily step target',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppTheme.textSecondary,
             ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 48),
 
-          // Goal options
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: goals.map((goal) {
-              final isSelected = _selectedGoal == goal;
-              return GestureDetector(
-                onTap: () => setState(() => _selectedGoal = goal),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.accentBlack : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppTheme.accentBlack
-                          : Colors.grey.shade300,
-                    ),
-                  ),
-                  child: Text(
-                    goal.toString().replaceAllMapped(
-                      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                      (m) => '${m[1]},',
-                    ),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: isSelected ? Colors.white : AppTheme.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Selected goal display
+          // Large goal display
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
               children: [
-                Icon(Icons.directions_walk, color: AppTheme.textSecondary),
-                const SizedBox(width: 12),
                 Text(
-                  '${_selectedGoal.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} steps/day',
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  _selectedGoal.toString().replaceAllMapped(
+                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                    (m) => '${m[1]},',
+                  ),
+                  style: theme.textTheme.displayMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'steps per day',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Slider
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Column(
+              children: [
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 10,
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 14,
+                    ),
+                    overlayShape: const RoundSliderOverlayShape(
+                      overlayRadius: 28,
+                    ),
+                    activeTrackColor: AppTheme.accentBlack,
+                    inactiveTrackColor: Colors.grey.shade200,
+                    thumbColor: AppTheme.accentBlack,
+                    overlayColor: AppTheme.accentBlack.withValues(alpha: 0.2),
+                  ),
+                  child: Slider(
+                    value: _selectedGoal.toDouble(),
+                    min: minGoal.toDouble(),
+                    max: maxGoal.toDouble(),
+                    divisions: (maxGoal - minGoal) ~/ 500,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedGoal = value.round();
+                      });
+                    },
+                  ),
+                ),
+                // Min/Max labels
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${minGoal ~/ 1000}K',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        '${maxGoal ~/ 1000}K',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -319,7 +310,206 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  // Page 3: Permission
+  // Page 3: Body Measurements
+  Widget _buildBodyMeasurementsPage() {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const SizedBox(height: 40),
+
+          Icon(
+            Icons.accessibility_new_rounded,
+            size: 60,
+            color: AppTheme.accentBlack,
+          ),
+          const SizedBox(height: 24),
+
+          Text(
+            'Body Measurements',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Used to calculate calories burned more accurately',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Metric/Imperial toggle
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildUnitToggle('Metric', true),
+                _buildUnitToggle('Imperial', false),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+
+          // Height
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Height',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _useMetric
+                          ? '$_heightCm cm'
+                          : '${(_heightCm / 2.54).toStringAsFixed(1)} in',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppTheme.accentBlack,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 8,
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 12,
+                    ),
+                    activeTrackColor: AppTheme.accentBlack,
+                    inactiveTrackColor: Colors.grey.shade200,
+                    thumbColor: AppTheme.accentBlack,
+                  ),
+                  child: Slider(
+                    value: _heightCm.toDouble(),
+                    min: 100,
+                    max: 250,
+                    divisions: 150,
+                    onChanged: (value) =>
+                        setState(() => _heightCm = value.round()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Weight
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Weight',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      _useMetric
+                          ? '$_weightKg kg'
+                          : '${(_weightKg * 2.205).toStringAsFixed(1)} lbs',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: AppTheme.accentBlack,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 8,
+                    thumbShape: const RoundSliderThumbShape(
+                      enabledThumbRadius: 12,
+                    ),
+                    activeTrackColor: AppTheme.accentBlack,
+                    inactiveTrackColor: Colors.grey.shade200,
+                    thumbColor: AppTheme.accentBlack,
+                  ),
+                  child: Slider(
+                    value: _weightKg.toDouble(),
+                    min: 30,
+                    max: 200,
+                    divisions: 170,
+                    onChanged: (value) =>
+                        setState(() => _weightKg = value.round()),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          _buildNextButton('Continue', () {
+            // Save measurements
+            final storage = ref.read(storageServiceProvider);
+            storage.setHeightCm(_heightCm);
+            storage.setWeightKg(_weightKg);
+            ref.read(settingsProvider.notifier).setUseMetric(_useMetric);
+            _nextPage();
+          }),
+
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUnitToggle(String label, bool isMetric) {
+    final isSelected = _useMetric == isMetric;
+    return GestureDetector(
+      onTap: () => setState(() => _useMetric = isMetric),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.accentBlack : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: isSelected ? Colors.white : AppTheme.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Page 4: Permission
   Widget _buildPermissionPage() {
     final theme = Theme.of(context);
 
@@ -447,19 +637,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  // Page 4: Profile Setup
-  Widget _buildProfilePage() {
+  // Page 4: Sign In
+  Widget _buildSignInPage() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+    return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.login_rounded,
+                  size: 40,
+                  color: theme.iconTheme.color,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
 
           Text(
-            'Set Up Your Profile',
+            'Sign In',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimary,
@@ -467,119 +684,173 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'Let\'s personalize your experience',
+            'Sign in with Google to sync your progress and set up your profile automatically.',
+            textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppTheme.textSecondary,
             ),
           ),
 
-          const SizedBox(height: 32),
+          const Spacer(),
 
-          // Profile photo
-          GestureDetector(
-            onTap: _pickPhoto,
-            child: Stack(
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentBlack,
-                    shape: BoxShape.circle,
-                    image: _profilePhotoPath != null
-                        ? DecorationImage(
-                            image: FileImage(File(_profilePhotoPath!)),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
-                  ),
-                  child: _profilePhotoPath == null
-                      ? const Icon(
-                          Icons.person_rounded,
-                          color: Colors.white,
-                          size: 60,
-                        )
-                      : null,
+          // Google Sign In Button
+          InkWell(
+            onTap: _handleGoogleSignIn,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? Colors.transparent : Colors.grey.shade300,
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppTheme.mintBackground,
-                        width: 2,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isSigningIn)
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      ),
+                    )
+                  else
+                    // We can use an icon or asset here. For now using Icon.
+                    // Ideally use the official Google G logo asset.
+                    Image.network(
+                      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
+                      height: 24,
+                      width: 24,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.g_mobiledata_rounded,
+                        size: 32,
+                        color: Colors.blue,
                       ),
                     ),
-                    child: Icon(
-                      Icons.camera_alt_rounded,
-                      color: AppTheme.accentBlack,
-                      size: 18,
+                  const SizedBox(width: 12),
+                  Text(
+                    _isSigningIn ? 'Signing in...' : 'Sign in with Google',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-          Text(
-            'Tap to add photo',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Name input
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: TextField(
-              controller: _nameController,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: AppTheme.textPrimary,
+                ],
               ),
-              decoration: InputDecoration(
-                hintText: 'Enter your name',
-                hintStyle: theme.textTheme.titleLarge?.copyWith(
-                  color: AppTheme.textSecondary.withValues(alpha: 0.5),
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 20),
-              ),
-              onChanged: (value) => setState(() => _userName = value),
             ),
           ),
 
-          const SizedBox(height: 40),
-
-          _buildNextButton('Finish Setup', _completeOnboarding),
-
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
           TextButton(
-            onPressed: _completeOnboarding,
+            onPressed: _nextPage,
             child: Text(
-              'Skip',
+              'Skip for now',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: AppTheme.textSecondary,
               ),
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 40),
         ],
       ),
     );
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isSigningIn) return;
+
+    setState(() {
+      _isSigningIn = true;
+    });
+
+    try {
+      print('Starting Google Sign-In...');
+      final credential = await ref.read(authServiceProvider).signInWithGoogle();
+
+      if (credential != null && credential.user != null) {
+        print('Sign-In successful. User: ${credential.user?.email}');
+        final user = credential.user!;
+
+        // Save user data
+        final storage = ref.read(storageServiceProvider);
+        if (user.displayName != null) {
+          storage.setProfileName(user.displayName!);
+        }
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Signed in successfully'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        print('Syncing cloud data...');
+        // Sync with Firestore - this may update local onboarding status
+        final firestore = ref.read(firestoreServiceProvider);
+        await firestore.syncUserData();
+
+        // Refresh local state if needed (e.g. if profile name changed)
+        setState(() {});
+
+        print('Checking onboarding status...');
+
+        // Check if this is a RETURNING user (onboarding was already completed)
+        // The storage value may have been updated by cloud sync
+        final isReturningUser = storage.isOnboardingComplete;
+
+        if (mounted) {
+          if (isReturningUser) {
+            // Returning user - go straight to dashboard
+            print('Returning user detected, going to dashboard...');
+            Navigator.pushReplacementNamed(context, '/dashboard');
+          } else {
+            // New user - continue with onboarding (permission page)
+            print('New user, continuing onboarding...');
+            _nextPage();
+          }
+        }
+      } else {
+        print('Sign-In cancelled or returned null credential.');
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Sign in cancelled')));
+        }
+      }
+    } catch (e) {
+      print('Sign-In error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign in failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSigningIn = false;
+        });
+      }
+    }
   }
 
   Widget _buildNextButton(String text, VoidCallback onPressed) {
@@ -605,41 +876,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   void _nextPage() {
-    if (_currentPage < 3) {
+    if (_currentPage < 5) {
       // Reset animation to invisible state
       _contentAnimationController.reset();
 
-      // Start page slide first
+      // Start page slide first - slower for more premium feel
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutExpo,
       );
 
       // Delay content fade to start after page slide is mostly done
-      Future.delayed(const Duration(milliseconds: 350), () {
-        if (mounted) {
-          _contentAnimationController.forward();
-        }
-      });
-    }
-  }
-
-  void _previousPage() {
-    if (_currentPage > 0) {
-      // Dismiss keyboard to prevent overflow on previous screens
-      FocusScope.of(context).unfocus();
-
-      // Reset animation to invisible state
-      _contentAnimationController.reset();
-
-      // Start page slide first
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeInOutCubic,
-      );
-
-      // Delay content fade to start after page slide is mostly done
-      Future.delayed(const Duration(milliseconds: 350), () {
+      Future.delayed(const Duration(milliseconds: 400), () {
         if (mounted) {
           _contentAnimationController.forward();
         }
@@ -665,39 +913,5 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     // Auto-advance after permission
     await Future.delayed(const Duration(milliseconds: 500));
     _nextPage();
-  }
-
-  Future<void> _pickPhoto() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 500,
-      maxHeight: 500,
-      imageQuality: 80,
-    );
-
-    if (image != null) {
-      setState(() => _profilePhotoPath = image.path);
-    }
-  }
-
-  Future<void> _completeOnboarding() async {
-    final storage = ref.read(storageServiceProvider);
-
-    // Save profile data
-    if (_userName.trim().isNotEmpty) {
-      await storage.setProfileName(_userName.trim());
-    }
-    if (_profilePhotoPath != null) {
-      await storage.setProfilePhotoPath(_profilePhotoPath);
-    }
-
-    // Mark onboarding as complete
-    await storage.setOnboardingComplete(true);
-
-    // Navigate to main app
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    }
   }
 }
