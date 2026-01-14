@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/step_provider.dart';
 import '../providers/history_provider.dart';
+import '../services/update_service.dart';
 import 'dashboard/dashboard_content.dart';
 import 'stats/stats_screen.dart';
 import 'progress/progress_content.dart';
@@ -36,6 +37,11 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
     WidgetsBinding.instance.addObserver(this);
     // Check for day change immediately on mount
     _checkForDayChange();
+
+    // Check for app updates from GitHub
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService.checkForUpdate(context);
+    });
   }
 
   @override
