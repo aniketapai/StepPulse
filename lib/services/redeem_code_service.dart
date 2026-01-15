@@ -119,7 +119,13 @@ class RedeemCodeService {
       // 1. Delete cloud data first (while we still have the user ID)
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        print(
+          '🔄 [RedeemCodeService] Starting full reset for user: ${user.uid}',
+        );
         await _deleteCloudData(user.uid);
+
+        // Add a small delay to ensure Firestore propagates the deletes
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       // 2. Clear all local data
@@ -134,27 +140,50 @@ class RedeemCodeService {
   }
 
   /// Delete all user data from Firestore
+  /// This will delete all subcollections and the main user document
   Future<void> _deleteCloudData(String userId) async {
-    try {
-      final userDoc = _firestore.collection('users').doc(userId);
+    final userDoc = _firestore.collection('users').doc(userId);
 
-      // Delete history subcollection first
-      final historyDocs = await userDoc.collection('history').get();
+    // Delete history subcollection first (in batches for large collections)
+    await _deleteCollection(userDoc.collection('history'));
+
+    // Delete any other subcollections that might exist
+    // Add more here if you have other subcollections
+
+    // Delete main user document
+    await userDoc.delete();
+
+    // Verify deletion was successful by checking if doc still exists
+    final docSnapshot = await userDoc.get();
+    if (docSnapshot.exists) {
+      throw Exception(
+        'Failed to delete user document - still exists after delete',
+      );
+    }
+
+    print('✅ [RedeemCodeService] Cloud data deleted for user: $userId');
+  }
+
+  /// Delete all documents in a collection (handles batching for large collections)
+  Future<void> _deleteCollection(CollectionReference collection) async {
+    const batchSize = 100;
+    QuerySnapshot snapshot;
+
+    do {
+      snapshot = await collection.limit(batchSize).get();
+
+      if (snapshot.docs.isEmpty) break;
+
       final batch = _firestore.batch();
-
-      for (final doc in historyDocs.docs) {
+      for (final doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
-
-      // Delete main user document
-      batch.delete(userDoc);
-
       await batch.commit();
-      print('✅ [RedeemCodeService] Cloud data deleted for user: $userId');
-    } catch (e) {
-      print('⚠️ [RedeemCodeService] Failed to delete cloud data: $e');
-      // Don't throw - we still want to clear local data
-    }
+
+      print(
+        '🗑️ [RedeemCodeService] Deleted ${snapshot.docs.length} documents from ${collection.path}',
+      );
+    } while (snapshot.docs.length == batchSize);
   }
 
   /// Execute unlock pro (placeholder for future)
