@@ -19,7 +19,7 @@ class UpdateService {
   static const String _owner = 'aniketapai';
   static const String _repo = 'StepPulse';
 
-  /// Check for updates and show dialog if available
+  /// Check for updates and show dialog if available (silent - for app launch)
   static Future<void> checkForUpdate(BuildContext context) async {
     try {
       final updateInfo = await _checkGitHubRelease();
@@ -30,6 +30,80 @@ class UpdateService {
     } catch (e) {
       // Silently fail - don't interrupt user experience
       debugPrint('Update check failed: $e');
+    }
+  }
+
+  /// Manual check with loading indicator and user feedback
+  static Future<void> checkForUpdateManually(BuildContext context) async {
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: AppTheme.accentBlack),
+            SizedBox(width: 20),
+            Text('Checking for updates...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final updateInfo = await _checkGitHubRelease();
+
+      // Close loading dialog
+      if (context.mounted) Navigator.pop(context);
+
+      if (updateInfo != null && context.mounted) {
+        // Update available - show update dialog
+        _showUpdateDialog(context, updateInfo);
+      } else if (context.mounted) {
+        // No update available - show snackbar
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('You\'re on the latest version!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (context.mounted) Navigator.pop(context);
+
+      // Show error
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Could not check for updates'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     }
   }
 

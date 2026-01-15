@@ -21,8 +21,9 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     with TickerProviderStateMixin {
-  final PageController _pageController = PageController();
+  late PageController _pageController;
   int _currentPage = 0;
+  bool _startAtSignIn = false; // For returning logged-out users
 
   // Animation controllers
   late AnimationController _contentAnimationController;
@@ -40,6 +41,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   @override
   void initState() {
     super.initState();
+
+    // Check if user is returning after logout (onboarding complete but logged out)
+    // If so, start at Sign-In page instead of Welcome
+    final storage = ref.read(storageServiceProvider);
+    _startAtSignIn = storage.isOnboardingComplete;
+    final initialPage = _startAtSignIn ? 4 : 0; // 4 = Sign-In page
+    _currentPage = initialPage;
+    _pageController = PageController(initialPage: initialPage);
+
     _contentAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -144,11 +154,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (page) => setState(() => _currentPage = page),
                 children: [
-                  // Correct order: Permission → Goal → Body → Sign-In
-                  _buildAnimatedPage(_buildPermissionPage()), // Page 0
-                  _buildAnimatedPage(_buildGoalPage()), // Page 1
-                  _buildAnimatedPage(_buildBodyMeasurementsPage()), // Page 2
-                  _buildAnimatedPage(_buildSignInPage()), // Page 3 (last)
+                  // Order: Welcome → Permission → Goal → Body → Sign-In
+                  _buildAnimatedPage(_buildWelcomePage()), // Page 0
+                  _buildAnimatedPage(_buildPermissionPage()), // Page 1
+                  _buildAnimatedPage(_buildGoalPage()), // Page 2
+                  _buildAnimatedPage(_buildBodyMeasurementsPage()), // Page 3
+                  _buildAnimatedPage(_buildSignInPage()), // Page 4 (last)
                 ],
               ),
             ),
@@ -163,6 +174,52 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(position: _slideAnimation, child: child),
+    );
+  }
+
+  // Page 0: Welcome Page
+  Widget _buildWelcomePage() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          const Spacer(),
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppTheme.accentBlack,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.directions_walk_rounded,
+              color: Colors.white,
+              size: 60,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Welcome to StepPulse',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Track your steps, earn XP, and achieve your fitness goals with a fun, gamified experience!',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const Spacer(),
+          _buildNextButton('Get Started', _nextPage),
+          const SizedBox(height: 40),
+        ],
+      ),
     );
   }
 
@@ -748,21 +805,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          TextButton(
-            onPressed: () {
-              // On last page (Google Sign-In), skip means complete onboarding
-              _completeOnboarding();
-            },
-            child: Text(
-              'Skip for now',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
-            ),
-          ),
-
           const SizedBox(height: 40),
         ],
       ),
@@ -879,8 +921,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   void _nextPage() {
-    // Total pages: 0=Permission, 1=Goal, 2=Body, 3=Sign-In
-    const totalPages = 4;
+    // Total pages: 0=Welcome, 1=Permission, 2=Goal, 3=Body, 4=Sign-In
+    const totalPages = 5;
 
     if (_currentPage < totalPages - 1) {
       // Not on last page - continue to next page

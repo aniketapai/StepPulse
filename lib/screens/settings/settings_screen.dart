@@ -261,7 +261,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: () =>
-                                  UpdateService.checkForUpdate(context),
+                                  UpdateService.checkForUpdateManually(context),
                               icon: const Icon(Icons.refresh_rounded),
                               label: const Text('Check for Updates'),
                               style: ElevatedButton.styleFrom(
@@ -356,7 +356,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildSettingRow(
                             context,
                             title: 'StepPulse',
-                            subtitle: 'Version 1.0.0',
+                            subtitle: 'Version $_appVersion',
                           ),
                           const Divider(height: 24),
                           Text(
