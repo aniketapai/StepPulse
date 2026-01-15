@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_manager.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/premium_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/update_service.dart';
 
 /// Settings screen for app configuration
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -18,11 +19,20 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late double _goalValue;
+  String _appVersion = 'Loading...';
 
   @override
   void initState() {
     super.initState();
     _goalValue = ref.read(settingsProvider).dailyGoal.toDouble();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+    });
   }
 
   @override
@@ -233,39 +243,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Premium (Remove Ads) section
+                  // App Updates section
                   RepaintBoundary(
                     child: _buildSection(
                       context,
-                      title: 'Premium',
-                      icon: Icons.star_rounded,
+                      title: 'App Updates',
+                      icon: Icons.system_update_rounded,
                       child: Column(
                         children: [
                           _buildSettingRow(
                             context,
-                            title: ref.watch(premiumProvider)
-                                ? 'You are Premium!'
-                                : 'Remove Ads',
-                            subtitle: ref.watch(premiumProvider)
-                                ? 'Enjoy ad-free experience'
-                                : 'Get rid of all advertisements',
-                            trailing: ref.watch(premiumProvider)
-                                ? const Icon(
-                                    Icons.check_circle_rounded,
-                                    color: Colors.green,
-                                  )
-                                : ElevatedButton(
-                                    onPressed: () => _showPurchaseDialog(),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.accentBlack,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                    ),
-                                    child: const Text('Upgrade'),
-                                  ),
+                            title: 'Current Version',
+                            subtitle: 'v$_appVersion',
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  UpdateService.checkForUpdate(context),
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Check for Updates'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentBlack,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -847,132 +856,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
       }
     }
-  }
-
-  void _showPurchaseDialog() {
-    final theme = Theme.of(context);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Star icon
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.amber.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.star_rounded,
-                size: 40,
-                color: Colors.amber,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Title
-            Text(
-              'Go Premium',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Remove all ads and enjoy an uninterrupted experience',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade600,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Price (Test)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '₹99 / Lifetime (Test)',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Purchase button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () async {
-                  // Simulate purchase
-                  await ref.read(premiumProvider.notifier).purchasePremium();
-                  if (mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('🎉 You are now Premium!'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentBlack,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Purchase (Test)',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Restore button
-            TextButton(
-              onPressed: () {
-                ref.read(premiumProvider.notifier).restorePurchase();
-                Navigator.pop(context);
-              },
-              child: Text(
-                'Restore Purchase',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
   }
 
   String _formatNumber(int number) {
