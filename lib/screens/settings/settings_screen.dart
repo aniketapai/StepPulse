@@ -6,6 +6,7 @@ import '../../providers/settings_provider.dart';
 import '../../providers/sync_manager.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/redeem_code_provider.dart';
+import '../../providers/xp_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/update_service.dart';
@@ -989,6 +990,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
         // Handle post-action navigation based on action type
         if (codeInfo.action == RedeemCodeAction.resetAll) {
+          // Reset XP in-memory state (storage is already cleared)
+          ref.read(xpProvider.notifier).reset();
+
           // Sign out and navigate to onboarding
           final auth = ref.read(authServiceProvider);
           await auth.signOut();
