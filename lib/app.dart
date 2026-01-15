@@ -4,6 +4,7 @@ import 'core/theme/app_theme.dart';
 import 'screens/main_nav_shell.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/signin/sign_in_screen.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_manager.dart';
 
@@ -59,6 +60,12 @@ class _StepPulseAppState extends ConsumerState<StepPulseApp>
           case '/onboarding':
             return AppTheme.smoothPageRoute(
               page: const OnboardingScreen(),
+              settings: settings,
+            );
+          case '/sign-in':
+            // Separate sign-in only route for users who logged out
+            return AppTheme.smoothPageRoute(
+              page: const SignInScreen(),
               settings: settings,
             );
           case '/dashboard':

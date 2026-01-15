@@ -23,7 +23,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     with TickerProviderStateMixin {
   late PageController _pageController;
   int _currentPage = 0;
-  bool _startAtSignIn = false; // For returning logged-out users
 
   // Animation controllers
   late AnimationController _contentAnimationController;
@@ -42,13 +41,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   void initState() {
     super.initState();
 
-    // Check if user is returning after logout (onboarding complete but logged out)
-    // If so, start at Sign-In page instead of Welcome
-    final storage = ref.read(storageServiceProvider);
-    _startAtSignIn = storage.isOnboardingComplete;
-    final initialPage = _startAtSignIn ? 4 : 0; // 4 = Sign-In page
-    _currentPage = initialPage;
-    _pageController = PageController(initialPage: initialPage);
+    // Onboarding always starts at Welcome page (page 0)
+    // Returning users who logout use the separate /sign-in route
+    _pageController = PageController(initialPage: 0);
 
     _contentAnimationController = AnimationController(
       duration: const Duration(milliseconds: 600),

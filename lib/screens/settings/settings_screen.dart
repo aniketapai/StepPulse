@@ -853,7 +853,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         Navigator.of(
           context,
-        ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
+        ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
       }
     }
   }
