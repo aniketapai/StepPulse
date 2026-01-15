@@ -348,8 +348,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
           const Spacer(),
 
-          _buildNextButton('Continue', () {
-            ref.read(settingsProvider.notifier).setDailyGoal(_selectedGoal);
+          _buildNextButton('Continue', () async {
+            await ref
+                .read(settingsProvider.notifier)
+                .setDailyGoal(_selectedGoal);
             _nextPage();
           }),
 
@@ -522,12 +524,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
           const Spacer(),
 
-          _buildNextButton('Continue', () {
-            // Save measurements
+          _buildNextButton('Continue', () async {
+            // Save measurements - await to ensure they're saved before navigation
             final storage = ref.read(storageServiceProvider);
-            storage.setHeightCm(_heightCm);
-            storage.setWeightKg(_weightKg);
-            ref.read(settingsProvider.notifier).setUseMetric(_useMetric);
+            await storage.setHeightCm(_heightCm);
+            await storage.setWeightKg(_weightKg);
+            await ref.read(settingsProvider.notifier).setUseMetric(_useMetric);
             _nextPage();
           }),
 
