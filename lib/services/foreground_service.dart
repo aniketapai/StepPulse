@@ -12,12 +12,32 @@ class StepTaskHandler extends TaskHandler {
   int _baselineSteps = 0;
   int _todaySteps = 0;
   int _goal = 8000;
+  String _currentDate = _getTodayDateString();
+  int _lastRawSteps = 0;
+
+  /// Get today's date as a string (YYYY-MM-DD)
+  static String _getTodayDateString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     // Listen to step count
     Pedometer.stepCountStream.listen((event) {
       final rawSteps = event.steps;
+      _lastRawSteps = rawSteps;
+
+      // Check for day change
+      final today = _getTodayDateString();
+      if (_currentDate != today) {
+        // Day has changed! Reset for new day
+        _currentDate = today;
+        _baselineSteps = rawSteps;
+        _todaySteps = 0;
+        _updateNotification();
+        return;
+      }
 
       // Initialize baseline on first reading
       if (_baselineSteps == 0 && rawSteps > 0) {
@@ -33,8 +53,18 @@ class StepTaskHandler extends TaskHandler {
 
   @override
   void onRepeatEvent(DateTime timestamp) {
-    // Called periodically, update notification
-    _updateNotification();
+    // Check for day change periodically (every 5 seconds)
+    final today = _getTodayDateString();
+    if (_currentDate != today) {
+      // Day has changed! Reset for new day
+      _currentDate = today;
+      _baselineSteps = _lastRawSteps;
+      _todaySteps = 0;
+      _updateNotification();
+    } else {
+      // Just update notification with current data
+      _updateNotification();
+    }
   }
 
   @override

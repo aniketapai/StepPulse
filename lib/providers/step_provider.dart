@@ -84,6 +84,9 @@ class StepNotifier extends StateNotifier<StepState> {
   StreamSubscription<int>? _stepSubscription;
   Timer? _midnightTimer;
 
+  // Track milestone saves to prevent duplicate saves
+  final Set<int> _savedMilestones = {}; // {25, 50, 75, 100}
+
   StepNotifier(this._stepService, this._storage, [this._syncManager])
     : super(const StepState()) {
     _initialize();
@@ -233,6 +236,9 @@ class StepNotifier extends StateNotifier<StepState> {
     // Check for smart notifications
     _checkSmartNotifications();
 
+    // Check and save at goal milestones (25%, 50%, 75%, 100%)
+    _checkAndSaveMilestones();
+
     // Trigger cloud sync at milestones (optimized for scale)
     _syncManager?.onStepsChanged(todaySteps, _storage.dailyGoal);
   }
@@ -244,6 +250,38 @@ class StepNotifier extends StateNotifier<StepState> {
       baseline: state.baselineSteps,
       goal: _storage.dailyGoal,
     );
+  }
+
+  /// Check and save steps at goal milestones (25%, 50%, 75%, 100%)
+  /// This prevents data loss if user uninstalls mid-day, while keeping
+  /// cloud sync to once per day for cost efficiency.
+  void _checkAndSaveMilestones() {
+    final goal = _storage.dailyGoal;
+    final steps = state.todaySteps;
+
+    if (goal <= 0 || steps <= 0) return;
+
+    // Calculate progress percentage
+    final progress = (steps / goal * 100).floor();
+
+    // Define milestones to check (in order)
+    const milestones = [25, 50, 75, 100];
+
+    for (final milestone in milestones) {
+      if (progress >= milestone && !_savedMilestones.contains(milestone)) {
+        // Save current steps to local history (overwrites previous for same date)
+        // This is LOCAL ONLY - cloud sync happens once per day when day changes
+        _storage.saveStepsForDate(state.currentDate, steps);
+        _savedMilestones.add(milestone);
+
+        print(
+          '💾 Milestone $milestone% reached ($steps/$goal steps) - saved to local storage',
+        );
+
+        // Only save one milestone per step update to avoid excessive writes
+        break;
+      }
+    }
   }
 
   /// Handle day change (midnight reset)
@@ -276,6 +314,9 @@ class StepNotifier extends StateNotifier<StepState> {
       rawSteps: currentRawSteps,
       todaySteps: 0,
     );
+
+    // Reset milestone tracking for new day
+    _savedMilestones.clear();
 
     // Reset sync manager daily tracking
     _syncManager?.resetDailyTracking();

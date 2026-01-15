@@ -38,21 +38,29 @@ class UpdateService {
     // Get current app version
     final packageInfo = await PackageInfo.fromPlatform();
     final currentVersion = packageInfo.version;
+    debugPrint('🔄 Update check: Current version = $currentVersion');
 
     // Fetch latest release from GitHub
     final url = 'https://api.github.com/repos/$_owner/$_repo/releases/latest';
+    debugPrint('🔄 Fetching: $url');
     final response = await http.get(
       Uri.parse(url),
       headers: {'Accept': 'application/vnd.github.v3+json'},
     );
+    debugPrint('🔄 Response status: ${response.statusCode}');
 
     if (response.statusCode != 200) {
+      debugPrint('🔄 Failed to fetch releases');
       return null;
     }
 
     final data = jsonDecode(response.body);
     final latestTag = data['tag_name'] as String; // e.g., "v2.0.0"
     final latestVersion = latestTag.replaceFirst('v', ''); // "2.0.0"
+    debugPrint('🔄 Latest version on GitHub: $latestVersion');
+    debugPrint(
+      '🔄 Is newer: ${_isNewerVersion(latestVersion, currentVersion)}',
+    );
 
     // Compare versions
     if (_isNewerVersion(latestVersion, currentVersion)) {
@@ -66,6 +74,7 @@ class UpdateService {
           break;
         }
       }
+      debugPrint('🔄 APK URL found: $apkUrl');
 
       if (apkUrl != null) {
         return UpdateInfo(

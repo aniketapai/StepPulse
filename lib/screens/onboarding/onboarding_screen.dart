@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/step_provider.dart';
+import '../../providers/history_provider.dart';
 import '../../services/foreground_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_provider.dart';
@@ -143,15 +144,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (page) => setState(() => _currentPage = page),
                 children: [
-                  _buildAnimatedPage(_buildSignInPage()),
-                  if (!_permissionGranted)
-                    _buildAnimatedPage(_buildPermissionPage()),
-                  if (!_permissionGranted)
-                    _buildAnimatedPage(
-                      _buildGoalPage(),
-                    ), // Only show if we need basic setup
-                  if (!_permissionGranted)
-                    _buildAnimatedPage(_buildBodyMeasurementsPage()),
+                  // Correct order: Permission → Goal → Body → Sign-In
+                  _buildAnimatedPage(_buildPermissionPage()), // Page 0
+                  _buildAnimatedPage(_buildGoalPage()), // Page 1
+                  _buildAnimatedPage(_buildBodyMeasurementsPage()), // Page 2
+                  _buildAnimatedPage(_buildSignInPage()), // Page 3 (last)
                 ],
               ),
             ),
@@ -754,7 +751,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           const SizedBox(height: 16),
 
           TextButton(
-            onPressed: _nextPage,
+            onPressed: () {
+              // On last page (Google Sign-In), skip means complete onboarding
+              _completeOnboarding();
+            },
             child: Text(
               'Skip for now',
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -805,6 +805,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         // Sync with Firestore - this may update local onboarding status
         final firestore = ref.read(firestoreServiceProvider);
         await firestore.syncUserData();
+
+        // IMPORTANT: Refresh history provider so synced data shows in UI
+        ref.read(historyProvider.notifier).refresh();
 
         // Refresh local state if needed (e.g. if profile name changed)
         setState(() {});
@@ -876,22 +879,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   }
 
   void _nextPage() {
-    if (_currentPage < 5) {
-      // Reset animation to invisible state
+    // Total pages: 0=Permission, 1=Goal, 2=Body, 3=Sign-In
+    const totalPages = 4;
+
+    if (_currentPage < totalPages - 1) {
+      // Not on last page - continue to next page
       _contentAnimationController.reset();
 
-      // Start page slide first - slower for more premium feel
       _pageController.nextPage(
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeOutExpo,
       );
 
-      // Delay content fade to start after page slide is mostly done
       Future.delayed(const Duration(milliseconds: 400), () {
         if (mounted) {
           _contentAnimationController.forward();
         }
       });
+    } else {
+      // On last page (Sign-In) and user clicked skip - complete onboarding
+      _completeOnboarding();
+    }
+  }
+
+  /// Complete onboarding and navigate to dashboard
+  void _completeOnboarding() {
+    final storage = ref.read(storageServiceProvider);
+    storage.setOnboardingComplete(true);
+
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/dashboard');
     }
   }
 

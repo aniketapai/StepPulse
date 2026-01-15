@@ -18,7 +18,6 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late List<Animation<double>> _fadeAnimations;
-  late List<Animation<Offset>> _slideAnimations;
 
   @override
   void initState() {
@@ -28,29 +27,11 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
       vsync: this,
     );
 
-    // Create staggered animations for 5 elements
+    // Create staggered fade animations for 5 elements
     _fadeAnimations = List.generate(5, (index) {
       final start = index * 0.12;
       final end = start + 0.4;
       return Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animController,
-          curve: Interval(
-            start.clamp(0.0, 1.0),
-            end.clamp(0.0, 1.0),
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-    });
-
-    _slideAnimations = List.generate(5, (index) {
-      final start = index * 0.12;
-      final end = start + 0.4;
-      return Tween<Offset>(
-        begin: const Offset(0, 0.1),
-        end: Offset.zero,
-      ).animate(
         CurvedAnimation(
           parent: _animController,
           curve: Interval(
@@ -72,10 +53,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
   }
 
   Widget _buildAnimatedChild(int index, Widget child) {
-    return FadeTransition(
-      opacity: _fadeAnimations[index],
-      child: SlideTransition(position: _slideAnimations[index], child: child),
-    );
+    return FadeTransition(opacity: _fadeAnimations[index], child: child);
   }
 
   @override
