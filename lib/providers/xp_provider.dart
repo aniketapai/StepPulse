@@ -148,6 +148,11 @@ class XpNotifier extends StateNotifier<XpData> {
   void reset() {
     state = const XpData();
   }
+
+  /// Reload XP data from storage (call after Firestore sync)
+  void refresh() {
+    _loadXpData();
+  }
 }
 
 /// Provider for XP state

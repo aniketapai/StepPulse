@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/firestore_provider.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/xp_provider.dart';
 
 /// Sign-in only screen for returning users who logged out.
 /// This is NOT the full onboarding - just Google Sign-In.
@@ -166,6 +167,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         // Sync with Firestore
         final firestore = ref.read(firestoreServiceProvider);
         await firestore.syncUserData();
+
+        // Invalidate providers to reload fresh data from storage
+        ref.invalidate(xpProvider);
+        ref.invalidate(settingsProvider);
 
         // Refresh history provider
         ref.read(historyProvider.notifier).refresh();

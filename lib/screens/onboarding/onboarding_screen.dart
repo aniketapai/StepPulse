@@ -10,6 +10,7 @@ import '../../providers/history_provider.dart';
 import '../../services/foreground_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/firestore_provider.dart';
+import '../../providers/xp_provider.dart';
 
 /// Onboarding screen with multiple steps
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -844,6 +845,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         // Sync with Firestore - this may update local onboarding status
         final firestore = ref.read(firestoreServiceProvider);
         await firestore.syncUserData();
+
+        // Invalidate providers to reload fresh data from storage
+        ref.invalidate(xpProvider);
+        ref.invalidate(settingsProvider);
 
         // IMPORTANT: Refresh history provider so synced data shows in UI
         ref.read(historyProvider.notifier).refresh();

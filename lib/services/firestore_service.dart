@@ -137,9 +137,10 @@ class FirestoreService {
       if (data.containsKey('stats')) {
         final stats = data['stats'] as Map<String, dynamic>;
         // Only update XP if cloud has higher values (progress shouldn't go backwards)
+        // Note: stats contains {totalXp, currentStreak, ...} directly, not nested under 'xp'
         final localXp = _localStorage.getXpData();
-        final cloudXp = stats['xp'] as int? ?? 0;
-        final localXpValue = (localXp?['xp'] as int?) ?? 0;
+        final cloudXp = stats['totalXp'] as int? ?? 0;
+        final localXpValue = (localXp?['totalXp'] as int?) ?? 0;
 
         if (cloudXp >= localXpValue) {
           await _localStorage.saveXpData(stats);

@@ -5,12 +5,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_manager.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/redeem_code_provider.dart';
-import '../../providers/xp_provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/update_service.dart';
-import '../../services/redeem_code_service.dart';
 
 /// Settings screen for app configuration
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -23,8 +20,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late double _goalValue;
   String _appVersion = 'Loading...';
-  final TextEditingController _redeemCodeController = TextEditingController();
-  bool _isRedeemingCode = false;
 
   @override
   void initState() {
@@ -35,7 +30,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
-    _redeemCodeController.dispose();
     super.dispose();
   }
 
@@ -311,88 +305,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             color: AppTheme.textSecondary,
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Redeem Code section
-                  RepaintBoundary(
-                    child: _buildSection(
-                      context,
-                      title: 'Redeem Code',
-                      icon: Icons.card_giftcard_rounded,
-                      child: Column(
-                        children: [
-                          Text(
-                            'Enter a secret code to unlock features or perform actions.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _redeemCodeController,
-                            textCapitalization: TextCapitalization.characters,
-                            decoration: InputDecoration(
-                              hintText: 'Enter code',
-                              hintStyle: TextStyle(
-                                color: AppTheme.textSecondary.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                              filled: true,
-                              fillColor: AppTheme.mintBackground,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                            ),
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: AppTheme.textPrimary,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isRedeemingCode
-                                  ? null
-                                  : _handleRedeemCode,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.accentBlack,
-                                foregroundColor: Colors.white,
-                                disabledBackgroundColor: AppTheme.accentBlack
-                                    .withValues(alpha: 0.5),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: _isRedeemingCode
-                                  ? const SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                              Colors.white,
-                                            ),
-                                      ),
-                                    )
-                                  : const Text('Redeem'),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -945,222 +857,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ).pushNamedAndRemoveUntil('/sign-in', (route) => false);
       }
     }
-  }
-
-  Future<void> _handleRedeemCode() async {
-    final code = _redeemCodeController.text;
-    final redeemService = ref.read(redeemCodeServiceProvider);
-
-    // Validate the code
-    final validation = redeemService.validateCode(code);
-
-    if (!validation.isValid) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(validation.errorMessage ?? 'Invalid code'),
-            backgroundColor: Colors.red.shade400,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    // Code is valid - show confirmation dialog
-    final codeInfo = validation.codeInfo!;
-    final shouldProceed = await _showRedeemConfirmation(codeInfo);
-
-    if (shouldProceed != true || !mounted) return;
-
-    // Execute the code
-    setState(() => _isRedeemingCode = true);
-
-    try {
-      final result = await redeemService.executeCode(codeInfo);
-
-      if (!mounted) return;
-
-      if (result == RedeemCodeResult.success) {
-        _redeemCodeController.clear();
-
-        // Handle post-action navigation based on action type
-        if (codeInfo.action == RedeemCodeAction.resetAll) {
-          // Reset XP in-memory state (storage is already cleared)
-          ref.read(xpProvider.notifier).reset();
-
-          // Sign out and navigate to onboarding
-          final auth = ref.read(authServiceProvider);
-          await auth.signOut();
-
-          if (mounted) {
-            Navigator.of(
-              context,
-            ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
-          }
-        } else {
-          // For other actions, just show success
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${codeInfo.title} activated successfully!'),
-              backgroundColor: Colors.green.shade400,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Something went wrong. Please try again.'),
-            backgroundColor: Colors.red.shade400,
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.all(16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isRedeemingCode = false);
-      }
-    }
-  }
-
-  Future<bool?> _showRedeemConfirmation(RedeemCodeInfo codeInfo) {
-    return showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: codeInfo.action == RedeemCodeAction.resetAll
-                    ? Colors.red.shade50
-                    : Colors.green.shade50,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                codeInfo.action == RedeemCodeAction.resetAll
-                    ? Icons.warning_rounded
-                    : Icons.card_giftcard_rounded,
-                size: 32,
-                color: codeInfo.action == RedeemCodeAction.resetAll
-                    ? Colors.red
-                    : Colors.green,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              codeInfo.title,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              codeInfo.description,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondary, height: 1.5),
-            ),
-            if (codeInfo.warning.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  codeInfo.warning,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: codeInfo.action == RedeemCodeAction.resetAll
-                      ? Colors.red
-                      : AppTheme.accentBlack,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Text(
-                  codeInfo.action == RedeemCodeAction.resetAll
-                      ? 'Reset Everything'
-                      : 'Confirm',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
   }
 
   String _formatNumber(int number) {
