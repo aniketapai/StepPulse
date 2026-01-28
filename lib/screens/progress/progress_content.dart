@@ -66,27 +66,6 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     // Get history map for heatmap
     final historyMap = storage.getHistoryMap(days: 365);
 
-    // Calculate stats
-    final totalSteps = history.fold<int>(0, (sum, item) => sum + item.steps);
-    final avgSteps = history.isNotEmpty ? totalSteps ~/ history.length : 0;
-    final daysWithGoal = history
-        .where((h) => h.steps >= settings.dailyGoal)
-        .length;
-
-    // Calculate current streak
-    int currentStreak = 0;
-    final now = DateTime.now();
-    for (int i = 0; i < 365; i++) {
-      final date = now.subtract(Duration(days: i));
-      final dateStr = DateFormat('yyyy-MM-dd').format(date);
-      final steps = historyMap[dateStr] ?? 0;
-      if (steps > 0) {
-        currentStreak++;
-      } else if (i > 0) {
-        break;
-      }
-    }
-
     return SafeArea(
       child: SingleChildScrollView(
         // ClampingScrollPhysics for smoother, more controlled scrolling
@@ -107,37 +86,6 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                     color: AppTheme.textPrimary,
                   ),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Quick Stats Row - animated
-            _buildAnimatedChild(
-              1,
-              Row(
-                children: [
-                  _buildStatBox(
-                    context,
-                    value: currentStreak.toString(),
-                    label: 'Day Streak',
-                    icon: Icons.local_fire_department_rounded,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatBox(
-                    context,
-                    value: daysWithGoal.toString(),
-                    label: 'Goals Hit',
-                    icon: Icons.flag_rounded,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildStatBox(
-                    context,
-                    value: _formatNumber(avgSteps),
-                    label: 'Avg Steps',
-                    icon: Icons.trending_up_rounded,
-                  ),
-                ],
               ),
             ),
 
@@ -225,48 +173,20 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                 ),
               )
             else
-              ...history
-                  .take(5)
-                  .map(
-                    (item) =>
-                        _buildActivityItem(context, item, settings.dailyGoal),
-                  ),
+              // Filter out today from Recent Activity (today is shown in Today's Activity card)
+              ...(() {
+                final now = DateTime.now();
+                final todayStr = DateFormat('yyyy-MM-dd').format(now);
+                return history
+                    .where((item) => item.date != todayStr)
+                    .take(5)
+                    .map(
+                      (item) =>
+                          _buildActivityItem(context, item, settings.dailyGoal),
+                    );
+              })(),
 
             const SizedBox(height: 120), // Space for nav bar
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatBox(
-    BuildContext context, {
-    required String value,
-    required String label,
-    required IconData icon,
-  }) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.cardDecoration,
-        child: Column(
-          children: [
-            Icon(icon, color: AppTheme.textSecondary, size: 20),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: AppTheme.textSecondary,
-              ),
-            ),
           ],
         ),
       ),
@@ -278,7 +198,8 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     final now = DateTime.now();
     final months = <String>[];
 
-    for (int i = 5; i >= 0; i--) {
+    // Show 2 months (current and previous)
+    for (int i = 1; i >= 0; i--) {
       final month = DateTime(now.year, now.month - i, 1);
       months.add(DateFormat('MMM').format(month));
     }
@@ -306,8 +227,8 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     final now = DateTime.now();
     final weeks = <List<DateTime>>[];
 
-    // Build 26 weeks (roughly 6 months)
-    for (int w = 25; w >= 0; w--) {
+    // Build 8 weeks (2 months)
+    for (int w = 7; w >= 0; w--) {
       final weekDays = <DateTime>[];
       for (int d = 0; d < 7; d++) {
         final date = now.subtract(Duration(days: w * 7 + (6 - d)));
@@ -316,29 +237,37 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
       weeks.add(weekDays);
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: weeks.map((week) {
-          return Column(
-            children: week.map((date) {
-              final dateStr = DateFormat('yyyy-MM-dd').format(date);
-              final steps = historyMap[dateStr] ?? 0;
-              final intensity = _getIntensity(steps, goal);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: weeks.map((week) {
+        return Column(
+          children: week.map((date) {
+            final dateStr = DateFormat('yyyy-MM-dd').format(date);
+            final steps = historyMap[dateStr] ?? 0;
+            final intensity = _getIntensity(steps, goal);
+            final fullDate = DateFormat('EEEE, MMMM d, yyyy').format(date);
 
-              return Container(
-                width: 12,
-                height: 12,
-                margin: const EdgeInsets.all(1.5),
+            return GestureDetector(
+              onTap: () => _showActivityDialog(
+                context,
+                date: fullDate,
+                steps: steps,
+                goal: goal,
+                isToday: dateStr == DateFormat('yyyy-MM-dd').format(now),
+              ),
+              child: Container(
+                width: 18,
+                height: 18,
+                margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color: _getColorForIntensity(intensity),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(3),
                 ),
-              );
-            }).toList(),
-          );
-        }).toList(),
-      ),
+              ),
+            );
+          }).toList(),
+        );
+      }).toList(),
     );
   }
 
@@ -384,12 +313,12 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
         ...List.generate(
           5,
           (i) => Container(
-            width: 12,
-            height: 12,
+            width: 18,
+            height: 18,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
               color: _getColorForIntensity(i),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(3),
             ),
           ),
         ),

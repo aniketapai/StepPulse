@@ -135,8 +135,7 @@ class StepNotifier extends StateNotifier<StepState> {
     // Schedule midnight reset
     _scheduleMidnightReset();
 
-    // IMPORTANT: Check for existing permission and start listening automatically
-    // This ensures step counting works after app restart
+    // Start listening to pedometer sensor
     await _checkAndStartListening();
   }
 
@@ -203,29 +202,51 @@ class StepNotifier extends StateNotifier<StepState> {
       return;
     }
 
-    // Handle device reboot (rawSteps < baseline)
+    // Calculate potential new step count
+    int calculatedSteps = rawSteps - state.baselineSteps;
+
+    // Handle device reboot or sensor reset (rawSteps < baseline)
+    // Instead of resetting to 0, we preserve current progress and adjust baseline
     if (rawSteps < state.baselineSteps && state.baselineSteps > 0) {
-      // Device was rebooted, save current progress and reset baseline
-      _storage.saveStepsForDate(state.currentDate, state.todaySteps);
-      _storage.setBaselineSteps(rawSteps);
+      // Sensor was reset (reboot, recalibration, etc.)
+      // Preserve existing progress by adjusting baseline
+      // New baseline = rawSteps - current steps (so steps stay the same)
+      final newBaseline = rawSteps - state.todaySteps;
+      _storage.setBaselineSteps(newBaseline);
+      _storage.setLastRawSteps(rawSteps);
 
       state = state.copyWith(
         rawSteps: rawSteps,
-        baselineSteps: rawSteps,
-        todaySteps: 0,
+        baselineSteps: newBaseline,
+        // todaySteps stays the same!
       );
       return;
     }
 
-    // Normal case: calculate today's steps
-    final todaySteps = rawSteps - state.baselineSteps;
+    // MONOTONIC TRACKING: Steps should never decrease within a day
+    // If calculated steps would be lower than current, ignore this reading
+    if (calculatedSteps < state.todaySteps) {
+      // Sensor reading is inconsistent - adjust baseline to maintain current steps
+      // This handles cases where sensor sporadically reports lower values
+      final adjustedBaseline = rawSteps - state.todaySteps;
+      if (adjustedBaseline >= 0) {
+        _storage.setBaselineSteps(adjustedBaseline);
+        _storage.setLastRawSteps(rawSteps);
+        state = state.copyWith(
+          rawSteps: rawSteps,
+          baselineSteps: adjustedBaseline,
+        );
+      }
+      // Don't update todaySteps - keep the higher value
+      return;
+    }
 
-    // Persist raw steps
+    // Normal case: calculated steps >= current steps, update normally
     _storage.setLastRawSteps(rawSteps);
 
     state = state.copyWith(
       rawSteps: rawSteps,
-      todaySteps: todaySteps,
+      todaySteps: calculatedSteps,
       isLoading: false,
       sensorAvailable: true,
     );
@@ -240,7 +261,7 @@ class StepNotifier extends StateNotifier<StepState> {
     _checkAndSaveMilestones();
 
     // Trigger cloud sync at milestones (optimized for scale)
-    _syncManager?.onStepsChanged(todaySteps, _storage.dailyGoal);
+    _syncManager?.onStepsChanged(calculatedSteps, _storage.dailyGoal);
   }
 
   /// Sync step data with foreground service notification

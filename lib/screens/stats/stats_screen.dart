@@ -115,7 +115,14 @@ class _StatsContentState extends ConsumerState<StatsContent>
         (todaySteps >= settings.dailyGoal ? 1 : 0);
 
     // Get weekly data for chart (including today)
-    final weeklyDataFromHistory = history.take(6).toList().reversed.toList();
+    // Filter out today from history to avoid duplicates (we add today's live steps separately)
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final weeklyDataFromHistory = history
+        .where((item) => item.date != todayDateStr)
+        .take(6)
+        .toList()
+        .reversed
+        .toList();
     final weeklyData = [
       ...weeklyDataFromHistory,
       if (todaySteps > 0)
@@ -263,7 +270,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         context,
                         title: 'Goals Hit',
                         value: daysWithGoal.toString(),
-                        subtitle: 'of ${history.length} days',
+                        subtitle: 'total',
                         icon: Icons.flag_rounded,
                       ),
                     ),

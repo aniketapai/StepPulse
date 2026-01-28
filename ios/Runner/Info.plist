@@ -47,5 +47,9 @@
 	<true/>
 	<key>NSMotionUsageDescription</key>
 	<string>StepPulse needs access to motion data to count your steps and track your fitness activity.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>StepPulse needs your location to track your walking route on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>StepPulse needs your location to track your walking route even when the app is in the background.</string>
 </dict>
 </plist>

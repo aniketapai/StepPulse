@@ -168,6 +168,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         final firestore = ref.read(firestoreServiceProvider);
         await firestore.syncUserData();
 
+        // Sync walk history from cloud
+        await firestore.syncWalks();
+
         // Invalidate providers to reload fresh data from storage
         ref.invalidate(xpProvider);
         ref.invalidate(settingsProvider);

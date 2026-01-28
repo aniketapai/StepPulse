@@ -135,6 +135,32 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
             isSelected: _currentIndex == 1,
             onTap: () => _switchTab(1),
           ),
+          // Center Walk Button - Pops out!
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/walk'),
+            child: Container(
+              width: 56,
+              height: 56,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.mintBackground, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.directions_walk_rounded,
+                color: AppTheme.accentBlack,
+                size: 28,
+              ),
+            ),
+          ),
           _NavItem(
             icon: Icons.show_chart_rounded,
             label: 'Progress',

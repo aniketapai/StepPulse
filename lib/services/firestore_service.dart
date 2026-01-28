@@ -170,4 +170,90 @@ class FirestoreService {
       return false;
     }
   }
+
+  /// Save a single walk session to Firestore
+  Future<void> saveWalk(Map<String, dynamic> walkData) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      print('❌ [FirestoreService] Cannot save walk: No user logged in');
+      return;
+    }
+
+    try {
+      final walkId =
+          walkData['id'] as String? ??
+          DateTime.now().millisecondsSinceEpoch.toString();
+      await _users
+          .doc(user.uid)
+          .collection('walks')
+          .doc(walkId)
+          .set(walkData, SetOptions(merge: true));
+      print('✅ Walk saved to cloud: $walkId');
+    } catch (e) {
+      print('⚠️ Error saving walk to cloud: $e');
+    }
+  }
+
+  /// Sync all walks from Firestore to local storage
+  Future<void> syncWalks() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final walksSnapshot = await _users
+          .doc(user.uid)
+          .collection('walks')
+          .orderBy('startTime', descending: true)
+          .limit(50)
+          .get();
+
+      if (walksSnapshot.docs.isEmpty) return;
+
+      // Get local walks
+      final localWalks = _localStorage.getWalkHistory();
+      final localIds = <String>{};
+      for (final walk in localWalks) {
+        if (walk is Map) {
+          localIds.add(walk['id'] as String? ?? '');
+        }
+      }
+
+      // Add cloud walks that aren't already local
+      final mergedWalks = List<dynamic>.from(localWalks);
+      for (final doc in walksSnapshot.docs) {
+        if (!localIds.contains(doc.id)) {
+          mergedWalks.add(doc.data());
+        }
+      }
+
+      // Sort by startTime descending and keep only last 50
+      mergedWalks.sort((a, b) {
+        final aTime = a['startTime'] as String? ?? '';
+        final bTime = b['startTime'] as String? ?? '';
+        return bTime.compareTo(aTime);
+      });
+
+      if (mergedWalks.length > 50) {
+        mergedWalks.removeRange(50, mergedWalks.length);
+      }
+
+      await _localStorage.saveWalkHistory(mergedWalks);
+      print('✅ Walks synced from cloud: ${walksSnapshot.docs.length} walks');
+    } catch (e) {
+      print('⚠️ Error syncing walks from cloud: $e');
+    }
+  }
+
+  /// Delete a walk from Firestore
+  Future<void> deleteWalk(String walkId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await _users.doc(user.uid).collection('walks').doc(walkId).delete();
+      print('✅ Walk deleted from cloud: $walkId');
+    } catch (e) {
+      print('⚠️ Error deleting walk from cloud: $e');
+    }
+  }
 }

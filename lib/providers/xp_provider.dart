@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../models/xp_data.dart';
 import '../services/storage_service.dart';
 import '../services/smart_notifications.dart';
@@ -18,6 +19,89 @@ class XpNotifier extends StateNotifier<XpData> {
     if (data != null) {
       state = XpData.fromMap(data);
     }
+    // Recalculate streak stats from history data
+    _recalculateStreakStats();
+  }
+
+  /// Recalculate current streak, longest streak, and days active from step history
+  void _recalculateStreakStats() {
+    final historyMap = _storage.getHistoryMap(days: 365);
+    if (historyMap.isEmpty) return;
+
+    final now = DateTime.now();
+    final dateFormat = DateFormat('yyyy-MM-dd');
+
+    // Calculate current streak (consecutive days with steps, starting from today/yesterday)
+    int currentStreak = 0;
+    for (int i = 0; i < 365; i++) {
+      final date = now.subtract(Duration(days: i));
+      final dateStr = dateFormat.format(date);
+      final steps = historyMap[dateStr] ?? 0;
+      if (steps > 0) {
+        currentStreak++;
+      } else if (i > 0) {
+        // Allow today to have 0 steps (day not over yet), but break if any past day is 0
+        break;
+      }
+    }
+
+    // Calculate longest streak and total days active
+    int longestStreak = 0;
+    int tempStreak = 0;
+    int totalDaysActive = 0;
+    DateTime? lastActiveDate;
+
+    // Sort dates chronologically
+    final sortedDates = historyMap.keys.toList()..sort();
+
+    for (int i = 0; i < sortedDates.length; i++) {
+      final dateStr = sortedDates[i];
+      final steps = historyMap[dateStr] ?? 0;
+
+      if (steps > 0) {
+        totalDaysActive++;
+        final currentDate = DateTime.parse(dateStr);
+
+        // Track last active date
+        if (lastActiveDate == null || currentDate.isAfter(lastActiveDate)) {
+          lastActiveDate = currentDate;
+        }
+
+        // Check if consecutive day
+        if (i > 0) {
+          final prevDateStr = sortedDates[i - 1];
+          final prevDate = DateTime.parse(prevDateStr);
+          final daysDiff = currentDate.difference(prevDate).inDays;
+
+          if (daysDiff == 1 && (historyMap[prevDateStr] ?? 0) > 0) {
+            // Consecutive day
+            tempStreak++;
+          } else {
+            // Streak broken, start new streak
+            tempStreak = 1;
+          }
+        } else {
+          tempStreak = 1;
+        }
+
+        if (tempStreak > longestStreak) {
+          longestStreak = tempStreak;
+        }
+      }
+    }
+
+    // Update state with calculated values
+    state = state.copyWith(
+      currentStreak: currentStreak,
+      longestStreak: longestStreak > state.longestStreak
+          ? longestStreak
+          : state.longestStreak,
+      totalDaysActive: totalDaysActive,
+      lastActiveDate: lastActiveDate ?? state.lastActiveDate,
+    );
+
+    // Persist the updated stats
+    _storage.saveXpData(state.toMap());
   }
 
   /// Award XP for daily steps (called at end of day / day change)

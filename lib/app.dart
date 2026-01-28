@@ -5,6 +5,10 @@ import 'screens/main_nav_shell.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/signin/sign_in_screen.dart';
+import 'screens/walk/walk_screen.dart';
+import 'screens/walk/walk_history_screen.dart';
+import 'screens/walk/walk_detail_screen.dart';
+import 'models/walk_session.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_manager.dart';
 
@@ -76,6 +80,22 @@ class _StepPulseAppState extends ConsumerState<StepPulseApp>
           case '/settings':
             return AppTheme.smoothPageRoute(
               page: const SettingsScreen(),
+              settings: settings,
+            );
+          case '/walk':
+            return AppTheme.smoothPageRoute(
+              page: const WalkScreen(),
+              settings: settings,
+            );
+          case '/walk-history':
+            return AppTheme.smoothPageRoute(
+              page: const WalkHistoryScreen(),
+              settings: settings,
+            );
+          case '/walk-detail':
+            final walk = settings.arguments as WalkSession;
+            return AppTheme.smoothPageRoute(
+              page: WalkDetailScreen(walk: walk),
               settings: settings,
             );
           default:

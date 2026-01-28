@@ -264,4 +264,85 @@ class StorageService {
   Future<void> setPremium(bool value) async {
     await _settingsBox.put(_premiumKey, value);
   }
+
+  // ============ Walk History ============
+
+  static const String _walkHistoryKey = 'walk_history';
+
+  /// Get walk history
+  List<dynamic> getWalkHistory() {
+    final data = _settingsBox.get(_walkHistoryKey);
+    if (data == null) return [];
+    return List<dynamic>.from(data as List);
+  }
+
+  /// Save walk history
+  Future<void> saveWalkHistory(List<dynamic> walks) async {
+    // Convert WalkSession objects to maps if they aren't already
+    final List<Map<String, dynamic>> walkMaps = walks.map((walk) {
+      if (walk is Map<String, dynamic>) {
+        return walk;
+      }
+      // Assume it has a toMap method
+      return walk.toMap() as Map<String, dynamic>;
+    }).toList();
+    await _settingsBox.put(_walkHistoryKey, walkMaps);
+  }
+
+  /// Clear walk history
+  Future<void> clearWalkHistory() async {
+    await _settingsBox.delete(_walkHistoryKey);
+  }
+
+  // ============ Recent Location Searches ============
+
+  static const String _recentSearchesKey = 'recent_searches';
+  static const int _maxRecentSearches = 10;
+
+  /// Get recent location searches
+  List<Map<String, dynamic>> getRecentSearches() {
+    final data = _settingsBox.get(_recentSearchesKey);
+    if (data == null) return [];
+    return List<Map<String, dynamic>>.from(
+      (data as List).map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+  }
+
+  /// Add a location to recent searches
+  Future<void> addRecentSearch({
+    required String displayName,
+    required String shortName,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final searches = getRecentSearches();
+
+    // Remove duplicate if exists
+    searches.removeWhere(
+      (s) =>
+          s['displayName'] == displayName ||
+          (s['latitude'] == latitude && s['longitude'] == longitude),
+    );
+
+    // Add to beginning
+    searches.insert(0, {
+      'displayName': displayName,
+      'shortName': shortName,
+      'latitude': latitude,
+      'longitude': longitude,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    // Keep only max items
+    if (searches.length > _maxRecentSearches) {
+      searches.removeRange(_maxRecentSearches, searches.length);
+    }
+
+    await _settingsBox.put(_recentSearchesKey, searches);
+  }
+
+  /// Clear recent searches
+  Future<void> clearRecentSearches() async {
+    await _settingsBox.delete(_recentSearchesKey);
+  }
 }
