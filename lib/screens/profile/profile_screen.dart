@@ -96,6 +96,10 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     final xp = ref.watch(xpProvider);
     final storage = ref.watch(storageServiceProvider);
     final theme = Theme.of(context);
+
+    // Classic theme colors
+    const accentColor = AppTheme.accentBlack;
+    const accentBgColor = AppTheme.mintBackground;
     final isGoogleUser = ref.read(authServiceProvider).isGoogleUser;
 
     // Parse member since date for display
@@ -168,7 +172,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                             width: 100,
                             height: 100,
                             decoration: BoxDecoration(
-                              color: AppTheme.accentBlack,
+                              color: accentColor,
                               shape: BoxShape.circle,
                               image: storage.profilePhotoPath != null
                                   ? DecorationImage(
@@ -366,7 +370,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                                 widthFactor: xp.levelProgress,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentBlack,
+                                    color: accentColor,
                                     borderRadius: BorderRadius.circular(5),
                                   ),
                                 ),
@@ -488,10 +492,15 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
               ),
             ),
 
+            const SizedBox(height: 16),
+
+            // Streak Freeze Card
+            _buildStreakFreezeCard(context, xp, accentColor, theme),
+
             const SizedBox(height: 20),
 
             // BMI Card
-            _buildBmiCard(context, storage),
+            _buildBmiCard(context, storage, accentColor, accentBgColor),
 
             const SizedBox(height: 120), // Space for nav bar
           ],
@@ -657,7 +666,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     setState(() => _isEditingName = false);
   }
 
-  Widget _buildBmiCard(BuildContext context, storage) {
+  Widget _buildBmiCard(
+    BuildContext context,
+    storage,
+    Color accentColor,
+    Color accentBgColor,
+  ) {
     final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
     final heightCm = settings.heightCm;
@@ -697,12 +711,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: accentBgColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.monitor_weight_rounded,
-                  color: AppTheme.textPrimary,
+                  color: accentColor,
                   size: 20,
                 ),
               ),
@@ -841,16 +855,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.mintBackground,
+                    color: accentBgColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.height_rounded,
-                        color: AppTheme.textSecondary,
-                        size: 20,
-                      ),
+                      Icon(Icons.height_rounded, color: accentColor, size: 20),
                       const SizedBox(height: 4),
                       Text(
                         settings.useMetric
@@ -870,14 +880,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.mintBackground,
+                    color: accentBgColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     children: [
                       Icon(
                         Icons.monitor_weight_outlined,
-                        color: AppTheme.textSecondary,
+                        color: accentColor,
                         size: 20,
                       ),
                       const SizedBox(height: 4),
@@ -897,6 +907,347 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStreakFreezeCard(
+    BuildContext context,
+    XpData xp,
+    Color accentColor,
+    ThemeData theme,
+  ) {
+    final isActive = xp.streakFreezeActive;
+    final canAfford = xp.canAffordStreakFreeze;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isActive
+            ? Border.all(color: Colors.blue.shade300, width: 2)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isActive ? Colors.blue.shade50 : AppTheme.mintBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.ac_unit_rounded,
+              color: isActive ? Colors.blue.shade600 : accentColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Streak Freeze',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isActive
+                      ? 'Active! Yesterday is protected'
+                      : 'Missed yesterday? Protect your streak',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isActive
+                        ? Colors.blue.shade600
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Button
+          if (isActive)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.blue.shade600,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Active',
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: canAfford
+                  ? () => _showStreakFreezeConfirmation(context)
+                  : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: canAfford ? accentColor : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '$kStreakFreezeCost',
+                      style: TextStyle(
+                        color: canAfford ? Colors.white : Colors.grey.shade500,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      'XP',
+                      style: TextStyle(
+                        color: canAfford
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : Colors.grey.shade500,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showStreakFreezeConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.blue.shade50, Colors.white],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.ac_unit_rounded,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                'Streak Freeze',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Description
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.shield_rounded,
+                          color: Colors.blue.shade600,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Protects your streak, not your steps',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'If you missed your goal yesterday, this prevents your streak from resetting to zero. Your step count stays the same.',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Cost
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlack,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.stars_rounded,
+                      color: Colors.amber,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$kStreakFreezeCost XP',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: AppTheme.textSecondary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final success = await ref
+                            .read(xpProvider.notifier)
+                            .activateStreakFreeze();
+                        if (mounted && success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.ac_unit_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text('Streak protected! 🎉'),
+                                ],
+                              ),
+                              backgroundColor: Colors.blue.shade600,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Activate',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -6,7 +6,6 @@ import '../core/constants/app_constants.dart';
 import '../services/step_service.dart';
 import '../services/storage_service.dart';
 import '../services/foreground_service.dart';
-import '../services/smart_notifications.dart';
 import 'settings_provider.dart';
 import 'sync_manager.dart';
 
@@ -254,9 +253,6 @@ class StepNotifier extends StateNotifier<StepState> {
     // Sync with foreground service notification
     _syncWithForegroundService();
 
-    // Check for smart notifications
-    _checkSmartNotifications();
-
     // Check and save at goal milestones (25%, 50%, 75%, 100%)
     _checkAndSaveMilestones();
 
@@ -377,28 +373,6 @@ class StepNotifier extends StateNotifier<StepState> {
   Future<void> saveProgress() async {
     if (state.todaySteps > 0) {
       await _storage.saveStepsForDate(state.currentDate, state.todaySteps);
-    }
-  }
-
-  /// Check and trigger smart notifications
-  void _checkSmartNotifications() {
-    // Get personal best from history
-    final history = _storage.getHistory(days: 365);
-    final personalBest = history.isEmpty
-        ? 0
-        : history.fold<int>(0, (max, h) => h.steps > max ? h.steps : max);
-
-    SmartNotificationService().checkAndNotify(
-      todaySteps: state.todaySteps,
-      goal: _storage.dailyGoal,
-      currentStreak: 0, // Will be updated when we integrate with XP provider
-      personalBest: personalBest,
-    );
-
-    // Reset inactivity timer when steps increase
-    if (state.todaySteps > 0) {
-      SmartNotificationService().cancelInactivityReminder();
-      SmartNotificationService().scheduleInactivityReminder();
     }
   }
 

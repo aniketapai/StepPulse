@@ -25,156 +25,168 @@ class DashboardScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(color: AppTheme.accentBlack),
               )
             : SingleChildScrollView(
-                // ClampingScrollPhysics for smoother, more controlled scrolling
                 physics: const ClampingScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-
-                      // Header Row
-                      _buildHeader(context),
-
-                      const SizedBox(height: 24),
-
-                      // Main Card with Progress Ring
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(32),
-                        decoration: AppTheme.cardDecoration,
-                        child: Column(
-                          children: [
-                            // Greeting
-                            Text(
-                              _getGreeting(),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Progress Ring with Step Counter
-                            ProgressRing(
-                              progress: stepState.getProgress(
-                                settings.dailyGoal,
-                              ),
-                              size: 220,
-                              strokeWidth: 12,
-                              backgroundColor: AppTheme.mintBackground,
-                              progressColor: AppTheme.accentBlack,
-                              child: StepCounterDisplay(
-                                steps: stepState.todaySteps,
-                                goal: settings.dailyGoal,
-                              ),
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // Goal indicator pill - tappable to change goal
-                            GestureDetector(
-                              onTap: () => _showGoalChangeDialog(
-                                context,
-                                ref,
-                                settings.dailyGoal,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 12,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentBlack,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.flag_rounded,
-                                      color: Colors.white,
-                                      size: 18,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Goal: ${_formatNumber(settings.dailyGoal)}',
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(color: Colors.white),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    const Icon(
-                                      Icons.edit_rounded,
-                                      color: Colors.white70,
-                                      size: 14,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Stats Cards Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StatCard(
-                              title: 'Distance',
-                              value: stepState
-                                  .getDistance(useMetric: settings.useMetric)
-                                  .toStringAsFixed(1),
-                              unit: settings.useMetric ? 'km' : 'mi',
-                              icon: Icons.directions_walk_rounded,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: StatCard(
-                              title: 'Calories',
-                              value: stepState.calories.round().toString(),
-                              unit: 'kcal',
-                              icon: Icons.local_fire_department_rounded,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      // Second row stats
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StatCard(
-                              title: 'Active Time',
-                              value: _estimateActiveTime(stepState.todaySteps),
-                              unit: 'min',
-                              icon: Icons.timer_outlined,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: StatCard(
-                              title: 'Remaining',
-                              value: _formatNumber(
-                                stepState.getRemainingSteps(settings.dailyGoal),
-                              ),
-                              unit: 'steps',
-                              icon: Icons.trending_up_rounded,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 160), // Space for bottom nav + ad
-                    ],
+                  child: _buildClassicLayout(
+                    context,
+                    ref,
+                    stepState,
+                    settings,
+                    theme,
                   ),
                 ),
               ),
       ),
       bottomNavigationBar: _buildBottomNav(context),
+    );
+  }
+
+  /// Build classic theme layout
+  Widget _buildClassicLayout(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic stepState,
+    SettingsState settings,
+    ThemeData theme,
+  ) {
+    return Column(
+      children: [
+        const SizedBox(height: 16),
+
+        // Header Row
+        _buildHeader(context),
+
+        const SizedBox(height: 24),
+
+        // Main Card with Progress Ring
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(32),
+          decoration: AppTheme.cardDecoration,
+          child: Column(
+            children: [
+              // Greeting
+              Text(
+                _getGreeting(),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Progress Ring with Step Counter
+              ProgressRing(
+                progress: stepState.getProgress(settings.dailyGoal),
+                size: 220,
+                strokeWidth: 12,
+                backgroundColor: AppTheme.mintBackground,
+                progressColor: AppTheme.accentBlack,
+                child: StepCounterDisplay(
+                  steps: stepState.todaySteps,
+                  goal: settings.dailyGoal,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Goal indicator pill - tappable to change goal
+              GestureDetector(
+                onTap: () =>
+                    _showGoalChangeDialog(context, ref, settings.dailyGoal),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentBlack,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.flag_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Goal: ${_formatNumber(settings.dailyGoal)}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.edit_rounded,
+                        color: Colors.white70,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // Stats Cards Row
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                title: 'Distance',
+                value: stepState
+                    .getDistance(useMetric: settings.useMetric)
+                    .toStringAsFixed(1),
+                unit: settings.useMetric ? 'km' : 'mi',
+                icon: Icons.directions_walk_rounded,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                title: 'Calories',
+                value: stepState.calories.round().toString(),
+                unit: 'kcal',
+                icon: Icons.local_fire_department_rounded,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // Second row stats
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                title: 'Active Time',
+                value: _estimateActiveTime(stepState.todaySteps),
+                unit: 'min',
+                icon: Icons.timer_outlined,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StatCard(
+                title: 'Remaining',
+                value: _formatNumber(
+                  stepState.getRemainingSteps(settings.dailyGoal),
+                ),
+                unit: 'steps',
+                icon: Icons.trending_up_rounded,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 160), // Space for bottom nav + ad
+      ],
     );
   }
 
@@ -224,11 +236,13 @@ class DashboardScreen extends ConsumerWidget {
 
   /// Build bottom navigation bar
   Widget _buildBottomNav(BuildContext context) {
+    const navColor = AppTheme.accentBlack;
+
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.accentBlack,
+        color: navColor,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(

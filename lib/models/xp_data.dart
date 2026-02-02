@@ -10,6 +10,9 @@ const int kGoalBonusXp = 50;
 /// XP awarded for streak (per day of streak)
 const int kStreakBonusXpPerDay = 10;
 
+/// XP cost to activate a streak freeze
+const int kStreakFreezeCost = 500;
+
 /// Level thresholds (10 levels)
 /// ~200 XP/day at 10k steps + goal = takes ~3 weeks to max
 const List<int> kLevelThresholds = [
@@ -47,6 +50,8 @@ class XpData {
   final int totalStepsAllTime;
   final int totalDaysActive;
   final DateTime? lastActiveDate;
+  final bool streakFreezeActive;
+  final DateTime? streakFreezeDate;
 
   const XpData({
     this.totalXp = 0,
@@ -55,7 +60,12 @@ class XpData {
     this.totalStepsAllTime = 0,
     this.totalDaysActive = 0,
     this.lastActiveDate,
+    this.streakFreezeActive = false,
+    this.streakFreezeDate,
   });
+
+  /// Check if user can afford a streak freeze
+  bool get canAffordStreakFreeze => totalXp >= kStreakFreezeCost;
 
   /// Calculate current level based on total XP
   int get level {
@@ -106,6 +116,8 @@ class XpData {
     int? totalStepsAllTime,
     int? totalDaysActive,
     DateTime? lastActiveDate,
+    bool? streakFreezeActive,
+    DateTime? streakFreezeDate,
   }) {
     return XpData(
       totalXp: totalXp ?? this.totalXp,
@@ -114,6 +126,8 @@ class XpData {
       totalStepsAllTime: totalStepsAllTime ?? this.totalStepsAllTime,
       totalDaysActive: totalDaysActive ?? this.totalDaysActive,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
+      streakFreezeActive: streakFreezeActive ?? this.streakFreezeActive,
+      streakFreezeDate: streakFreezeDate ?? this.streakFreezeDate,
     );
   }
 
@@ -126,6 +140,8 @@ class XpData {
       'totalStepsAllTime': totalStepsAllTime,
       'totalDaysActive': totalDaysActive,
       'lastActiveDate': lastActiveDate?.toIso8601String(),
+      'streakFreezeActive': streakFreezeActive,
+      'streakFreezeDate': streakFreezeDate?.toIso8601String(),
     };
   }
 
@@ -139,6 +155,10 @@ class XpData {
       totalDaysActive: map['totalDaysActive'] as int? ?? 0,
       lastActiveDate: map['lastActiveDate'] != null
           ? DateTime.parse(map['lastActiveDate'] as String)
+          : null,
+      streakFreezeActive: map['streakFreezeActive'] as bool? ?? false,
+      streakFreezeDate: map['streakFreezeDate'] != null
+          ? DateTime.parse(map['streakFreezeDate'] as String)
           : null,
     );
   }

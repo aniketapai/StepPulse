@@ -7,6 +7,7 @@ class StatCard extends StatelessWidget {
   final String value;
   final String unit;
   final IconData icon;
+  final Color? accentColor;
 
   const StatCard({
     super.key,
@@ -14,11 +15,16 @@ class StatCard extends StatelessWidget {
     required this.value,
     required this.unit,
     required this.icon,
+    this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final accent = accentColor ?? AppTheme.accentBlack;
+    final bgColor = accentColor != null
+        ? accentColor!.withValues(alpha: 0.1)
+        : AppTheme.mintBackground;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -30,10 +36,10 @@ class StatCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.mintBackground,
+              color: bgColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppTheme.textPrimary, size: 20),
+            child: Icon(icon, color: accent, size: 20),
           ),
           const SizedBox(height: 16),
           // Title

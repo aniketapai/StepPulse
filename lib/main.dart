@@ -6,7 +6,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'app.dart';
 import 'services/storage_service.dart';
 import 'services/foreground_service.dart';
-import 'services/smart_notifications.dart';
 import 'providers/settings_provider.dart';
 
 void main() async {
@@ -39,9 +38,6 @@ void main() async {
 
   // Initialize foreground service
   await ForegroundStepService().init();
-
-  // Initialize smart notifications
-  await SmartNotificationService().init();
 
   // Initialize Firebase
   await Firebase.initializeApp();

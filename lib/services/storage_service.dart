@@ -227,6 +227,19 @@ class StorageService {
     await _settingsBox.put(_weightKgKey, weight);
   }
 
+  // ============ Dashboard Theme ============
+
+  static const String _dashboardThemeKey = 'dashboard_theme';
+
+  /// Get dashboard theme (0 = classic, 1 = modern)
+  int get dashboardTheme =>
+      _settingsBox.get(_dashboardThemeKey, defaultValue: 0) as int;
+
+  /// Set dashboard theme
+  Future<void> setDashboardTheme(int theme) async {
+    await _settingsBox.put(_dashboardThemeKey, theme);
+  }
+
   /// Reset all progress (XP, history, but keep profile & settings)
   Future<void> resetAllProgress() async {
     // Clear history

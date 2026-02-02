@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
+import '../providers/settings_provider.dart';
 import '../providers/step_provider.dart';
 import '../providers/history_provider.dart';
 import '../services/update_service.dart';
@@ -72,15 +73,21 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
 
   @override
   Widget build(BuildContext context) {
-    // Force status bar color to match mint background
+    // Watch settings for other preferences
+    ref.watch(settingsProvider);
+
+    // Classic theme background
+    const backgroundColor = AppTheme.mintBackground;
+
+    // Force status bar color to match background
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: AppTheme.mintBackground,
+        statusBarColor: backgroundColor,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: AppTheme.mintBackground,
+        backgroundColor: backgroundColor,
         // Use AnimatedSwitcher for smooth fade transitions between tabs
         body: AnimatedSwitcher(
           duration: const Duration(milliseconds: 350),
@@ -113,11 +120,15 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
   }
 
   Widget _buildBottomNav() {
+    // Classic theme colors
+    const navColor = AppTheme.accentBlack;
+    const accentColor = AppTheme.mintBackground;
+
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.accentBlack,
+        color: navColor,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -145,7 +156,7 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.mintBackground, width: 3),
+                border: Border.all(color: accentColor, width: 3),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.white.withValues(alpha: 0.3),
@@ -154,9 +165,9 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.directions_walk_rounded,
-                color: AppTheme.accentBlack,
+                color: navColor,
                 size: 28,
               ),
             ),

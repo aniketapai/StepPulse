@@ -181,15 +181,29 @@ class WalkingNotifier extends StateNotifier<WalkingState> {
 
   /// Save a completed walk with description and rating
   Future<void> saveCompletedWalk(WalkSession session) async {
-    // Skip only walks with truly no data (empty route AND no distance)
-    if (session.routePoints.isEmpty && session.totalDistanceMeters < 1) {
+    // Debug logging to trace save issues
+    print(
+      '[WalkSave] Saving walk: id=${session.id}, '
+      'routePoints=${session.routePoints.length}, '
+      'distance=${session.totalDistanceMeters.toStringAsFixed(1)}m, '
+      'steps=${session.steps}, '
+      'duration=${session.duration.inSeconds}s',
+    );
+
+    // Skip only walks with absolutely no data (no route, no steps, no distance)
+    if (session.routePoints.isEmpty &&
+        session.totalDistanceMeters < 1 &&
+        session.steps == 0) {
+      print('[WalkSave] Skipping walk - no data recorded');
       return;
     }
 
     final walkData = session.toMap();
+    print('[WalkSave] Walk data prepared for save: ${walkData.keys}');
 
     // Save to local storage
     final walks = _storage.getWalkHistory();
+    print('[WalkSave] Current walk history count: ${walks.length}');
     walks.insert(0, walkData);
 
     // Keep only last 50 walks
@@ -198,9 +212,11 @@ class WalkingNotifier extends StateNotifier<WalkingState> {
     }
 
     await _storage.saveWalkHistory(walks);
+    print('[WalkSave] Walk saved to local storage. New count: ${walks.length}');
 
     // Save to cloud (async, don't wait)
     _firestore.saveWalk(walkData);
+    print('[WalkSave] Walk queued for cloud save');
   }
 
   /// Update an existing walk in cloud only (for edits)

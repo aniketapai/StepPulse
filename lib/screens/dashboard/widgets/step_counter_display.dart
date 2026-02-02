@@ -5,11 +5,15 @@ import '../../../core/theme/app_theme.dart';
 class StepCounterDisplay extends StatelessWidget {
   final int steps;
   final int goal;
+  final Color? accentColor;
+  final Color? accentBgColor;
 
   const StepCounterDisplay({
     super.key,
     required this.steps,
     required this.goal,
+    this.accentColor,
+    this.accentBgColor,
   });
 
   @override
@@ -52,13 +56,13 @@ class StepCounterDisplay extends StatelessWidget {
               margin: const EdgeInsets.only(left: 8),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: accentBgColor ?? AppTheme.mintBackground,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '$percentage%',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: accentColor ?? AppTheme.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),

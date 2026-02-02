@@ -18,10 +18,12 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late List<Animation<double>> _fadeAnimations;
+  late DateTime _selectedMonth; // For calendar navigation
 
   @override
   void initState() {
     super.initState();
+    _selectedMonth = DateTime.now(); // Start with current month
     _animController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -91,7 +93,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
 
             const SizedBox(height: 24),
 
-            // Activity Heatmap
+            // Activity Calendar
             Text(
               'Activity',
               style: theme.textTheme.titleMedium?.copyWith(
@@ -100,17 +102,20 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             ),
             const SizedBox(height: 12),
 
+            // Interactive Calendar
             Container(
               padding: const EdgeInsets.all(16),
               decoration: AppTheme.cardDecoration,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Month labels
-                  _buildMonthLabels(context),
+                  // Month navigation header
+                  _buildCalendarHeader(context),
+                  const SizedBox(height: 16),
+                  // Day of week labels
+                  _buildDayLabels(context),
                   const SizedBox(height: 8),
-                  // Heatmap grid
-                  _buildHeatmapGrid(context, historyMap, settings.dailyGoal),
+                  // Calendar grid
+                  _buildCalendarGrid(context, historyMap, settings.dailyGoal),
                   const SizedBox(height: 16),
                   // Legend
                   _buildLegend(context),
@@ -193,25 +198,77 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     );
   }
 
-  Widget _buildMonthLabels(BuildContext context) {
+  /// Build calendar header with month navigation
+  Widget _buildCalendarHeader(BuildContext context) {
     final theme = Theme.of(context);
+    final monthYear = DateFormat('MMMM yyyy').format(_selectedMonth);
     final now = DateTime.now();
-    final months = <String>[];
-
-    // Show 2 months (current and previous)
-    for (int i = 1; i >= 0; i--) {
-      final month = DateTime(now.year, now.month - i, 1);
-      months.add(DateFormat('MMM').format(month));
-    }
+    final canGoNext =
+        _selectedMonth.year < now.year ||
+        (_selectedMonth.year == now.year && _selectedMonth.month < now.month);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: months
+      children: [
+        IconButton(
+          onPressed: () {
+            setState(() {
+              _selectedMonth = DateTime(
+                _selectedMonth.year,
+                _selectedMonth.month - 1,
+              );
+            });
+          },
+          icon: const Icon(Icons.chevron_left_rounded),
+          color: AppTheme.accentBlack,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        Text(
+          monthYear,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        IconButton(
+          onPressed: canGoNext
+              ? () {
+                  setState(() {
+                    _selectedMonth = DateTime(
+                      _selectedMonth.year,
+                      _selectedMonth.month + 1,
+                    );
+                  });
+                }
+              : null,
+          icon: const Icon(Icons.chevron_right_rounded),
+          color: canGoNext ? AppTheme.accentBlack : Colors.grey.shade300,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+      ],
+    );
+  }
+
+  /// Build day of week labels
+  Widget _buildDayLabels(BuildContext context) {
+    final theme = Theme.of(context);
+    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: days
           .map(
-            (m) => Text(
-              m,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: AppTheme.textSecondary,
+            (d) => SizedBox(
+              width: 36,
+              child: Center(
+                child: Text(
+                  d,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           )
@@ -219,56 +276,93 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     );
   }
 
-  Widget _buildHeatmapGrid(
+  /// Build calendar grid for the selected month
+  Widget _buildCalendarGrid(
     BuildContext context,
     Map<String, int> historyMap,
     int goal,
   ) {
     final now = DateTime.now();
-    final weeks = <List<DateTime>>[];
+    final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+    final lastDay = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+    final daysInMonth = lastDay.day;
+    final firstWeekday = firstDay.weekday % 7; // 0 = Sunday
 
-    // Build 8 weeks (2 months)
-    for (int w = 7; w >= 0; w--) {
-      final weekDays = <DateTime>[];
-      for (int d = 0; d < 7; d++) {
-        final date = now.subtract(Duration(days: w * 7 + (6 - d)));
-        weekDays.add(date);
-      }
-      weeks.add(weekDays);
-    }
+    // Build calendar rows
+    final rows = <Widget>[];
+    var currentDay = 1 - firstWeekday;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: weeks.map((week) {
-        return Column(
-          children: week.map((date) {
-            final dateStr = DateFormat('yyyy-MM-dd').format(date);
-            final steps = historyMap[dateStr] ?? 0;
-            final intensity = _getIntensity(steps, goal);
-            final fullDate = DateFormat('EEEE, MMMM d, yyyy').format(date);
+    while (currentDay <= daysInMonth) {
+      final week = <Widget>[];
+      for (var i = 0; i < 7; i++) {
+        if (currentDay < 1 || currentDay > daysInMonth) {
+          // Empty cell
+          week.add(const SizedBox(width: 36, height: 36));
+        } else {
+          final date = DateTime(
+            _selectedMonth.year,
+            _selectedMonth.month,
+            currentDay,
+          );
+          final dateStr = DateFormat('yyyy-MM-dd').format(date);
+          final steps = historyMap[dateStr] ?? 0;
+          final intensity = _getIntensity(steps, goal);
+          final isToday =
+              date.year == now.year &&
+              date.month == now.month &&
+              date.day == now.day;
+          final isFuture = date.isAfter(now);
 
-            return GestureDetector(
-              onTap: () => _showActivityDialog(
-                context,
-                date: fullDate,
-                steps: steps,
-                goal: goal,
-                isToday: dateStr == DateFormat('yyyy-MM-dd').format(now),
-              ),
+          week.add(
+            GestureDetector(
+              onTap: isFuture
+                  ? null
+                  : () => _showActivityDialog(
+                      context,
+                      date: DateFormat('EEEE, MMMM d, yyyy').format(date),
+                      steps: steps,
+                      goal: goal,
+                      isToday: isToday,
+                    ),
               child: Container(
-                width: 18,
-                height: 18,
+                width: 36,
+                height: 36,
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: _getColorForIntensity(intensity),
-                  borderRadius: BorderRadius.circular(3),
+                  color: isFuture
+                      ? Colors.grey.shade100
+                      : _getColorForIntensity(intensity),
+                  borderRadius: BorderRadius.circular(8),
+                  border: isToday
+                      ? Border.all(color: AppTheme.accentBlack, width: 2)
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    '$currentDay',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                      color: isFuture
+                          ? Colors.grey.shade400
+                          : intensity >= 3
+                          ? Colors.white
+                          : AppTheme.textPrimary,
+                    ),
+                  ),
                 ),
               ),
-            );
-          }).toList(),
-        );
-      }).toList(),
-    );
+            ),
+          );
+        }
+        currentDay++;
+      }
+      rows.add(
+        Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: week),
+      );
+    }
+
+    return Column(children: rows);
   }
 
   int _getIntensity(int steps, int goal) {
@@ -282,6 +376,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
   }
 
   Color _getColorForIntensity(int intensity) {
+    // Classic theme colors
     switch (intensity) {
       case 0:
         return AppTheme.mintBackground;

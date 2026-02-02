@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/xp_data.dart';
 import '../services/storage_service.dart';
-import '../services/smart_notifications.dart';
 import 'settings_provider.dart';
 
 /// XP provider for gamification
@@ -32,7 +31,9 @@ class XpNotifier extends StateNotifier<XpData> {
     final dateFormat = DateFormat('yyyy-MM-dd');
 
     // Calculate current streak (consecutive days with steps, starting from today/yesterday)
+    // A streak freeze can protect a day with 0 steps
     int currentStreak = 0;
+    bool freezeConsumed = false;
     for (int i = 0; i < 365; i++) {
       final date = now.subtract(Duration(days: i));
       final dateStr = dateFormat.format(date);
@@ -40,8 +41,14 @@ class XpNotifier extends StateNotifier<XpData> {
       if (steps > 0) {
         currentStreak++;
       } else if (i > 0) {
-        // Allow today to have 0 steps (day not over yet), but break if any past day is 0
-        break;
+        // Check if streak freeze protects this day
+        if (!freezeConsumed && shouldUseFreezeForDate(date)) {
+          currentStreak++; // Freeze protects this day
+          freezeConsumed = true;
+        } else {
+          // Allow today to have 0 steps (day not over yet), but break if any past day is 0
+          break;
+        }
       }
     }
 
@@ -110,9 +117,6 @@ class XpNotifier extends StateNotifier<XpData> {
     required int goal,
     required String date,
   }) async {
-    // Store previous level for comparison
-    final previousLevel = state.level;
-
     // Calculate streak
     final today = DateTime.now();
     final lastActive = state.lastActiveDate;
@@ -150,14 +154,6 @@ class XpNotifier extends StateNotifier<XpData> {
 
     // Persist
     await _storage.saveXpData(state.toMap());
-
-    // Check for level-up and send notification
-    if (state.level > previousLevel) {
-      SmartNotificationService().showLevelUpNotification(
-        newLevel: state.level,
-        levelTitle: state.levelTitle,
-      );
-    }
   }
 
   /// Update XP in real-time based on today's steps (called on each step update)
@@ -190,22 +186,11 @@ class XpNotifier extends StateNotifier<XpData> {
       await _storage.setGoalBonusAwarded(true);
     }
 
-    // Store previous level for comparison
-    final previousLevel = state.level;
-
     // Update XP state
     state = state.copyWith(totalXp: state.totalXp + xpToAdd + goalBonus);
 
     // Persist
     await _storage.saveXpData(state.toMap());
-
-    // Check for level-up and send notification
-    if (state.level > previousLevel) {
-      SmartNotificationService().showLevelUpNotification(
-        newLevel: state.level,
-        levelTitle: state.levelTitle,
-      );
-    }
   }
 
   /// Reset live XP tracking for new day
@@ -226,6 +211,49 @@ class XpNotifier extends StateNotifier<XpData> {
       'streak': streakBonus,
       'total': stepXp + goalBonus + streakBonus,
     };
+  }
+
+  /// Activate a streak freeze by spending XP
+  /// The freeze protects YESTERDAY (retroactive application)
+  /// User applies it the morning after missing their goal
+  /// Returns true if successful, false if not enough XP
+  Future<bool> activateStreakFreeze() async {
+    if (!state.canAffordStreakFreeze) {
+      return false;
+    }
+
+    // Set freeze date to YESTERDAY (retroactive protection)
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+
+    // Deduct XP and activate freeze
+    state = state.copyWith(
+      totalXp: state.totalXp - kStreakFreezeCost,
+      streakFreezeActive: true,
+      streakFreezeDate: yesterday,
+    );
+
+    // Persist
+    await _storage.saveXpData(state.toMap());
+    return true;
+  }
+
+  /// Deactivate streak freeze (called after it's used or expired)
+  Future<void> deactivateStreakFreeze() async {
+    state = state.copyWith(streakFreezeActive: false);
+    await _storage.saveXpData(state.toMap());
+  }
+
+  /// Check if streak freeze should protect the streak for a given date
+  /// Returns true if freeze protects this date
+  bool shouldUseFreezeForDate(DateTime date) {
+    if (!state.streakFreezeActive) return false;
+    if (state.streakFreezeDate == null) return false;
+
+    // Freeze protects the date it was set to (yesterday when activated)
+    final freezeDate = state.streakFreezeDate!;
+    return date.year == freezeDate.year &&
+        date.month == freezeDate.month &&
+        date.day == freezeDate.day;
   }
 
   /// Reset all XP progress

@@ -87,6 +87,10 @@ class _StatsContentState extends ConsumerState<StatsContent>
     final stepState = ref.watch(stepProvider);
     final theme = Theme.of(context);
 
+    // Classic theme colors
+    const accentColor = AppTheme.accentBlack;
+    const accentBgColor = AppTheme.mintBackground;
+
     // Include today's steps in calculations
     final todaySteps = stepState.todaySteps;
 
@@ -212,6 +216,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                                 weeklyData,
                                 settings.dailyGoal,
                                 theme,
+                                accentColor,
                               ),
                       ),
                     ],
@@ -233,6 +238,8 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         value: _formatNumber(totalSteps),
                         subtitle: 'all time',
                         icon: Icons.directions_walk_rounded,
+                        accentColor: accentColor,
+                        accentBgColor: accentBgColor,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -243,6 +250,8 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         value: _formatNumber(avgSteps),
                         subtitle: 'per day',
                         icon: Icons.analytics_rounded,
+                        accentColor: accentColor,
+                        accentBgColor: accentBgColor,
                       ),
                     ),
                   ],
@@ -262,6 +271,8 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         value: _formatNumber(bestDaySteps),
                         subtitle: bestDayLabel,
                         icon: Icons.emoji_events_rounded,
+                        accentColor: accentColor,
+                        accentBgColor: accentBgColor,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -272,6 +283,8 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         value: daysWithGoal.toString(),
                         subtitle: 'total',
                         icon: Icons.flag_rounded,
+                        accentColor: accentColor,
+                        accentBgColor: accentBgColor,
                       ),
                     ),
                   ],
@@ -318,7 +331,12 @@ class _StatsContentState extends ConsumerState<StatsContent>
                       )
                     : Column(
                         children: weeklyData.map((day) {
-                          return _buildDayRow(context, day, settings.dailyGoal);
+                          return _buildDayRow(
+                            context,
+                            day,
+                            settings.dailyGoal,
+                            accentColor,
+                          );
                         }).toList(),
                       ),
               ),
@@ -331,7 +349,12 @@ class _StatsContentState extends ConsumerState<StatsContent>
     );
   }
 
-  Widget _buildLineChart(List<StepData> data, int goal, ThemeData theme) {
+  Widget _buildLineChart(
+    List<StepData> data,
+    int goal,
+    ThemeData theme,
+    Color accentColor,
+  ) {
     if (data.isEmpty) return const SizedBox.shrink();
 
     final maxY =
@@ -409,14 +432,14 @@ class _StatsContentState extends ConsumerState<StatsContent>
             }).toList(),
             isCurved: true,
             curveSmoothness: 0.3,
-            color: AppTheme.accentBlack,
+            color: accentColor,
             barWidth: 3,
             dotData: FlDotData(
               show: true,
               getDotPainter: (spot, percent, bar, index) {
                 return FlDotCirclePainter(
                   radius: 5,
-                  color: AppTheme.accentBlack,
+                  color: accentColor,
                   strokeWidth: 2,
                   strokeColor: Colors.white,
                 );
@@ -424,13 +447,13 @@ class _StatsContentState extends ConsumerState<StatsContent>
             ),
             belowBarData: BarAreaData(
               show: true,
-              color: AppTheme.accentBlack.withValues(alpha: 0.1),
+              color: accentColor.withValues(alpha: 0.1),
             ),
           ),
         ],
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => AppTheme.accentBlack,
+            getTooltipColor: (_) => accentColor,
             tooltipRoundedRadius: 8,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
@@ -456,6 +479,8 @@ class _StatsContentState extends ConsumerState<StatsContent>
     required String value,
     required String subtitle,
     required IconData icon,
+    required Color accentColor,
+    required Color accentBgColor,
   }) {
     final theme = Theme.of(context);
     return Container(
@@ -467,10 +492,10 @@ class _StatsContentState extends ConsumerState<StatsContent>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.mintBackground,
+              color: accentBgColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppTheme.textPrimary, size: 20),
+            child: Icon(icon, color: accentColor, size: 20),
           ),
           const SizedBox(height: 16),
           Text(
@@ -498,7 +523,12 @@ class _StatsContentState extends ConsumerState<StatsContent>
     );
   }
 
-  Widget _buildDayRow(BuildContext context, StepData day, int goal) {
+  Widget _buildDayRow(
+    BuildContext context,
+    StepData day,
+    int goal,
+    Color accentColor,
+  ) {
     final theme = Theme.of(context);
     final date = DateTime.parse(day.date);
     final progress = (day.steps / goal).clamp(0.0, 1.0);
@@ -544,9 +574,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 widthFactor: progress,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isGoalMet
-                        ? AppTheme.accentBlack
-                        : AppTheme.textSecondary,
+                    color: isGoalMet ? accentColor : AppTheme.textSecondary,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -568,7 +596,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
           const SizedBox(width: 8),
           Icon(
             isGoalMet ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: isGoalMet ? AppTheme.accentBlack : AppTheme.textSecondary,
+            color: isGoalMet ? accentColor : AppTheme.textSecondary,
             size: 16,
           ),
         ],

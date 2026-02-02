@@ -2,18 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../services/storage_service.dart';
 
+/// Dashboard theme options
+enum DashboardTheme { classic, modern }
+
 /// Settings state class
 class SettingsState {
   final int dailyGoal;
   final bool useMetric;
   final int heightCm;
   final int weightKg;
+  final DashboardTheme dashboardTheme;
 
   const SettingsState({
     this.dailyGoal = kDefaultDailyGoal,
     this.useMetric = true,
     this.heightCm = 170,
     this.weightKg = 70,
+    this.dashboardTheme = DashboardTheme.classic,
   });
 
   SettingsState copyWith({
@@ -21,12 +26,14 @@ class SettingsState {
     bool? useMetric,
     int? heightCm,
     int? weightKg,
+    DashboardTheme? dashboardTheme,
   }) {
     return SettingsState(
       dailyGoal: dailyGoal ?? this.dailyGoal,
       useMetric: useMetric ?? this.useMetric,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
+      dashboardTheme: dashboardTheme ?? this.dashboardTheme,
     );
   }
 
@@ -52,6 +59,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       useMetric: _storage.useMetric,
       heightCm: _storage.heightCm,
       weightKg: _storage.weightKg,
+      dashboardTheme: DashboardTheme.values[_storage.dashboardTheme],
     );
   }
 
@@ -80,10 +88,17 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(weightKg: weight);
   }
 
+  /// Update dashboard theme
+  Future<void> setDashboardTheme(DashboardTheme theme) async {
+    await _storage.setDashboardTheme(theme.index);
+    state = state.copyWith(dashboardTheme: theme);
+  }
+
   /// Reset settings to defaults
   Future<void> resetSettings() async {
     await _storage.setDailyGoal(kDefaultDailyGoal);
     await _storage.setUseMetric(true);
+    await _storage.setDashboardTheme(0);
     state = const SettingsState();
   }
 }

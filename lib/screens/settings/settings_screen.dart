@@ -46,8 +46,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // final storage = ref.watch(storageServiceProvider); // Unused
     final theme = Theme.of(context);
 
+    // Classic theme colors
+    const accentColor = AppTheme.accentBlack;
+    const backgroundColor = AppTheme.mintBackground;
+
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -128,12 +132,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               overlayShape: const RoundSliderOverlayShape(
                                 overlayRadius: 28,
                               ),
-                              activeTrackColor: AppTheme.accentBlack,
+                              activeTrackColor: accentColor,
                               inactiveTrackColor: Colors.grey.shade200,
-                              thumbColor: AppTheme.accentBlack,
-                              overlayColor: AppTheme.accentBlack.withValues(
-                                alpha: 0.2,
-                              ),
+                              thumbColor: accentColor,
+                              overlayColor: accentColor.withValues(alpha: 0.2),
                             ),
                             child: Slider(
                               value: _goalValue,
@@ -237,10 +239,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             // Sync to cloud (debounced)
                             ref.read(syncManagerProvider).onSettingsChanged();
                           },
-                          activeThumbColor: AppTheme.accentBlack,
-                          activeTrackColor: AppTheme.accentBlack.withValues(
-                            alpha: 0.5,
-                          ),
+                          activeThumbColor: accentColor,
+                          activeTrackColor: accentColor.withValues(alpha: 0.5),
                         ),
                       ),
                     ),

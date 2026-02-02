@@ -30,7 +30,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
       vsync: this,
     );
 
-    // Create staggered animations for 4 elements
     _fadeAnimations = List.generate(4, (index) {
       final start = index * 0.15;
       final end = start + 0.4;
@@ -86,14 +85,15 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     final settings = ref.watch(settingsProvider);
     final theme = Theme.of(context);
 
-    // Watch the bridge provider to enable live XP updates when steps change
     ref.watch(stepXpBridgeProvider);
+
+    // Classic theme colors
+    const accentColor = AppTheme.accentBlack;
+    const ringBgColor = AppTheme.mintBackground;
 
     return SafeArea(
       child: stepState.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentBlack),
-            )
+          ? Center(child: CircularProgressIndicator(color: accentColor))
           : SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
@@ -102,21 +102,30 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                   children: [
                     const SizedBox(height: 16),
 
-                    // Header Row - animated
+                    // Header Row - same layout
                     _buildAnimatedChild(0, _buildHeader(context)),
 
                     const SizedBox(height: 24),
 
-                    // Main Card with Progress Ring - animated
+                    // Main Card with Progress Ring
                     _buildAnimatedChild(
                       1,
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(32),
-                        decoration: AppTheme.cardDecoration,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
                         child: Column(
                           children: [
-                            // Greeting
                             Text(
                               _getGreeting(),
                               style: theme.textTheme.titleMedium?.copyWith(
@@ -124,32 +133,27 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                               ),
                             ),
                             const SizedBox(height: 24),
-
-                            // Progress Ring with Step Counter
                             ProgressRing(
                               progress: stepState.getProgress(
                                 settings.dailyGoal,
                               ),
                               size: 220,
                               strokeWidth: 12,
-                              backgroundColor: AppTheme.mintBackground,
-                              progressColor: AppTheme.accentBlack,
+                              backgroundColor: ringBgColor,
+                              progressColor: accentColor,
                               child: StepCounterDisplay(
                                 steps: stepState.todaySteps,
                                 goal: settings.dailyGoal,
                               ),
                             ),
-
                             const SizedBox(height: 32),
-
-                            // Goal indicator pill
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20,
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.accentBlack,
+                                color: accentColor,
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: Row(
@@ -177,7 +181,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
 
                     const SizedBox(height: 20),
 
-                    // Stats Cards Row - animated
+                    // Stats Cards Row
                     _buildAnimatedChild(
                       2,
                       Row(
@@ -190,6 +194,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                                   .toStringAsFixed(1),
                               unit: settings.useMetric ? 'km' : 'mi',
                               icon: Icons.directions_walk_rounded,
+                              accentColor: accentColor,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -199,6 +204,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                               value: stepState.calories.round().toString(),
                               unit: 'kcal',
                               icon: Icons.local_fire_department_rounded,
+                              accentColor: accentColor,
                             ),
                           ),
                         ],
@@ -207,7 +213,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
 
                     const SizedBox(height: 12),
 
-                    // Second row stats - animated
+                    // Second row stats
                     _buildAnimatedChild(
                       3,
                       Row(
@@ -218,6 +224,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                               value: _estimateActiveTime(stepState.todaySteps),
                               unit: 'min',
                               icon: Icons.timer_outlined,
+                              accentColor: accentColor,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -229,13 +236,14 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                               ),
                               unit: 'steps',
                               icon: Icons.trending_up_rounded,
+                              accentColor: accentColor,
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 120), // Space for bottom nav
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),
@@ -243,7 +251,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     );
   }
 
-  /// Build header row
   Widget _buildHeader(BuildContext context) {
     return Center(
       child: Text(
@@ -255,19 +262,13 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     );
   }
 
-  /// Get time-based greeting
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) {
-      return 'Good morning! 👋';
-    } else if (hour < 17) {
-      return 'Good afternoon! 👋';
-    } else {
-      return 'Good evening! 👋';
-    }
+    if (hour < 12) return 'Good morning! 👋';
+    if (hour < 17) return 'Good afternoon! 👋';
+    return 'Good evening! 👋';
   }
 
-  /// Format number with commas
   String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -275,9 +276,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     );
   }
 
-  /// Estimate active time from steps (roughly 100 steps per minute)
   String _estimateActiveTime(int steps) {
-    final minutes = (steps / 100).round();
-    return minutes.toString();
+    return (steps / 100).round().toString();
   }
 }
