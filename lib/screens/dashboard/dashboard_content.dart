@@ -20,7 +20,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late List<Animation<double>> _fadeAnimations;
-  late List<Animation<Offset>> _slideAnimations;
 
   @override
   void initState() {
@@ -45,24 +44,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
       );
     });
 
-    _slideAnimations = List.generate(4, (index) {
-      final start = index * 0.15;
-      final end = start + 0.4;
-      return Tween<Offset>(
-        begin: const Offset(0, 0.1),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _animController,
-          curve: Interval(
-            start.clamp(0.0, 1.0),
-            end.clamp(0.0, 1.0),
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-    });
-
     _animController.forward();
   }
 
@@ -73,10 +54,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
   }
 
   Widget _buildAnimatedChild(int index, Widget child) {
-    return FadeTransition(
-      opacity: _fadeAnimations[index],
-      child: SlideTransition(position: _slideAnimations[index], child: child),
-    );
+    return FadeTransition(opacity: _fadeAnimations[index], child: child);
   }
 
   @override
@@ -213,33 +191,15 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
 
                     const SizedBox(height: 12),
 
-                    // Second row stats
+                    // Active Time - full width since we removed Remaining
                     _buildAnimatedChild(
                       3,
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StatCard(
-                              title: 'Active Time',
-                              value: _estimateActiveTime(stepState.todaySteps),
-                              unit: 'min',
-                              icon: Icons.timer_outlined,
-                              accentColor: accentColor,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: StatCard(
-                              title: 'Remaining',
-                              value: _formatNumber(
-                                stepState.getRemainingSteps(settings.dailyGoal),
-                              ),
-                              unit: 'steps',
-                              icon: Icons.trending_up_rounded,
-                              accentColor: accentColor,
-                            ),
-                          ),
-                        ],
+                      StatCard(
+                        title: 'Active Time',
+                        value: _estimateActiveTime(stepState.todaySteps),
+                        unit: 'min',
+                        icon: Icons.timer_outlined,
+                        accentColor: accentColor,
                       ),
                     ),
 

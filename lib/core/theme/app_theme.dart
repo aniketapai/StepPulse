@@ -311,7 +311,7 @@ class AppTheme {
   /// Standard animation curve - ease out expo for slow-to-fast premium feel
   static const Curve animationCurve = Curves.easeOutExpo;
 
-  /// Custom page route with smooth fade + slide transition
+  /// Simple page route without animations - instant transitions
   static PageRouteBuilder<T> smoothPageRoute<T>({
     required Widget page,
     RouteSettings? settings,
@@ -319,32 +319,10 @@ class AppTheme {
     return PageRouteBuilder<T>(
       settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionDuration: pageTransitionDuration,
-      reverseTransitionDuration: pageTransitionDuration,
+      transitionDuration: Duration.zero,
+      reverseTransitionDuration: Duration.zero,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        // Use different curves for enter vs exit for natural feel
-        final curvedAnimation = CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutExpo,
-          reverseCurve: Curves.easeInExpo,
-        );
-
-        // Fade + subtle scale + slide for premium feel
-        return FadeTransition(
-          opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-            CurvedAnimation(
-              parent: animation,
-              curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-            ),
-          ),
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 0.03),
-              end: Offset.zero,
-            ).animate(curvedAnimation),
-            child: child,
-          ),
-        );
+        return child; // No animation at all
       },
     );
   }

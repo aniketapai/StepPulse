@@ -88,35 +88,19 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
       ),
       child: Scaffold(
         backgroundColor: backgroundColor,
-        // Use AnimatedSwitcher for smooth fade transitions between tabs
-        body: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 350),
-          switchInCurve: Curves.easeOutExpo,
-          switchOutCurve: Curves.easeInExpo,
-          transitionBuilder: (child, animation) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          child: _buildCurrentScreen(),
+        // Use IndexedStack to keep all screens mounted - no rebuild on tab switch
+        body: IndexedStack(
+          index: _currentIndex,
+          children: const [
+            DashboardContent(key: ValueKey('dashboard')),
+            StatsContent(key: ValueKey('stats')),
+            ProgressContent(key: ValueKey('progress')),
+            ProfileContent(key: ValueKey('profile')),
+          ],
         ),
         bottomNavigationBar: _buildBottomNav(),
       ),
     );
-  }
-
-  /// Build current screen with unique key for AnimatedSwitcher
-  Widget _buildCurrentScreen() {
-    switch (_currentIndex) {
-      case 0:
-        return const DashboardContent(key: ValueKey('dashboard'));
-      case 1:
-        return const StatsContent(key: ValueKey('stats'));
-      case 2:
-        return const ProgressContent(key: ValueKey('progress'));
-      case 3:
-        return const ProfileContent(key: ValueKey('profile'));
-      default:
-        return const DashboardContent(key: ValueKey('dashboard'));
-    }
   }
 
   Widget _buildBottomNav() {

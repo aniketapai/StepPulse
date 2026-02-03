@@ -5,12 +5,56 @@ import '../services/storage_service.dart';
 /// Dashboard theme options
 enum DashboardTheme { classic, modern }
 
+/// Activity level options for TDEE calculation
+enum ActivityLevel {
+  sedentary, // Little or no exercise
+  light, // 1-3 days/week
+  moderate, // 3-5 days/week
+  active, // 6-7 days/week
+  veryActive, // Intense exercise daily
+}
+
+extension ActivityLevelExtension on ActivityLevel {
+  String get label {
+    switch (this) {
+      case ActivityLevel.sedentary:
+        return 'Sedentary';
+      case ActivityLevel.light:
+        return 'Light (1-3 days/week)';
+      case ActivityLevel.moderate:
+        return 'Moderate (3-5 days/week)';
+      case ActivityLevel.active:
+        return 'Active (6-7 days/week)';
+      case ActivityLevel.veryActive:
+        return 'Very Active (intense daily)';
+    }
+  }
+
+  double get multiplier {
+    switch (this) {
+      case ActivityLevel.sedentary:
+        return 1.2;
+      case ActivityLevel.light:
+        return 1.375;
+      case ActivityLevel.moderate:
+        return 1.55;
+      case ActivityLevel.active:
+        return 1.725;
+      case ActivityLevel.veryActive:
+        return 1.9;
+    }
+  }
+}
+
 /// Settings state class
 class SettingsState {
   final int dailyGoal;
   final bool useMetric;
   final int heightCm;
   final int weightKg;
+  final int age;
+  final String gender; // 'male' or 'female'
+  final ActivityLevel activityLevel;
   final DashboardTheme dashboardTheme;
 
   const SettingsState({
@@ -18,6 +62,9 @@ class SettingsState {
     this.useMetric = true,
     this.heightCm = 170,
     this.weightKg = 70,
+    this.age = 25,
+    this.gender = 'male',
+    this.activityLevel = ActivityLevel.moderate,
     this.dashboardTheme = DashboardTheme.classic,
   });
 
@@ -26,6 +73,9 @@ class SettingsState {
     bool? useMetric,
     int? heightCm,
     int? weightKg,
+    int? age,
+    String? gender,
+    ActivityLevel? activityLevel,
     DashboardTheme? dashboardTheme,
   }) {
     return SettingsState(
@@ -33,6 +83,9 @@ class SettingsState {
       useMetric: useMetric ?? this.useMetric,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      activityLevel: activityLevel ?? this.activityLevel,
       dashboardTheme: dashboardTheme ?? this.dashboardTheme,
     );
   }
@@ -42,6 +95,18 @@ class SettingsState {
     final heightM = heightCm / 100.0;
     return heightM > 0 ? weightKg / (heightM * heightM) : 0.0;
   }
+
+  /// Calculate BMR using Mifflin-St Jeor equation
+  double get bmr {
+    if (gender == 'male') {
+      return 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+    } else {
+      return 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
+    }
+  }
+
+  /// Calculate TDEE (Total Daily Energy Expenditure)
+  double get tdee => bmr * activityLevel.multiplier;
 }
 
 /// Settings notifier for managing app settings
@@ -59,6 +124,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       useMetric: _storage.useMetric,
       heightCm: _storage.heightCm,
       weightKg: _storage.weightKg,
+      age: _storage.age,
+      gender: _storage.gender,
+      activityLevel: ActivityLevel.values[_storage.activityLevel.clamp(0, 4)],
       dashboardTheme: DashboardTheme.values[_storage.dashboardTheme],
     );
   }
@@ -86,6 +154,24 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setWeightKg(int weight) async {
     await _storage.setWeightKg(weight);
     state = state.copyWith(weightKg: weight);
+  }
+
+  /// Update age
+  Future<void> setAge(int age) async {
+    await _storage.setAge(age);
+    state = state.copyWith(age: age);
+  }
+
+  /// Update gender
+  Future<void> setGender(String gender) async {
+    await _storage.setGender(gender);
+    state = state.copyWith(gender: gender);
+  }
+
+  /// Update activity level
+  Future<void> setActivityLevel(ActivityLevel level) async {
+    await _storage.setActivityLevel(level.index);
+    state = state.copyWith(activityLevel: level);
   }
 
   /// Update dashboard theme

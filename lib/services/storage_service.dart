@@ -179,6 +179,10 @@ class StorageService {
   static const String _memberSinceKey = 'member_since';
   static const String _heightCmKey = 'height_cm';
   static const String _weightKgKey = 'weight_kg';
+  static const String _ageKey = 'age';
+  static const String _genderKey = 'gender'; // 'male' or 'female'
+  static const String _activityLevelKey = 'activity_level'; // 0-4
+  static const String _weightHistoryKey = 'weight_history';
 
   /// Get profile name
   String get profileName =>
@@ -225,6 +229,74 @@ class StorageService {
   /// Set weight in kg
   Future<void> setWeightKg(int weight) async {
     await _settingsBox.put(_weightKgKey, weight);
+  }
+
+  // Age
+  int get age => _settingsBox.get(_ageKey, defaultValue: 25) as int;
+
+  /// Set age
+  Future<void> setAge(int age) async {
+    await _settingsBox.put(_ageKey, age);
+  }
+
+  // Gender ('male' or 'female')
+  String get gender =>
+      _settingsBox.get(_genderKey, defaultValue: 'male') as String;
+
+  /// Set gender
+  Future<void> setGender(String gender) async {
+    await _settingsBox.put(_genderKey, gender);
+  }
+
+  // Activity level (0-4: sedentary, light, moderate, active, very active)
+  int get activityLevel =>
+      _settingsBox.get(_activityLevelKey, defaultValue: 2) as int;
+
+  /// Set activity level
+  Future<void> setActivityLevel(int level) async {
+    await _settingsBox.put(_activityLevelKey, level);
+  }
+
+  // Weight history - list of {date, weight} maps
+  List<Map<String, dynamic>> getWeightHistory() {
+    final data = _settingsBox.get(_weightHistoryKey);
+    if (data == null) return [];
+    return List<Map<String, dynamic>>.from(
+      (data as List).map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+  }
+
+  /// Add weight entry to history (optional date for historical entries)
+  Future<void> addWeightEntry(double weight, {String? date}) async {
+    final history = getWeightHistory();
+    final entryDate = date ?? getTodayDateString();
+
+    // Check if there's already an entry for this date
+    final existingIndex = history.indexWhere((e) => e['date'] == entryDate);
+    if (existingIndex >= 0) {
+      // Update existing entry
+      history[existingIndex]['weight'] = weight;
+    } else {
+      // Add new entry
+      history.add({'date': entryDate, 'weight': weight});
+    }
+
+    // Sort by date
+    history.sort(
+      (a, b) => (a['date'] as String).compareTo(b['date'] as String),
+    );
+
+    // Keep only last 365 entries
+    if (history.length > 365) {
+      history.removeRange(0, history.length - 365);
+    }
+
+    await _settingsBox.put(_weightHistoryKey, history);
+  }
+
+  /// Clear weight history
+  Future<void> clearWeightHistory() async {
+    await _settingsBox.delete(_weightHistoryKey);
   }
 
   // ============ Dashboard Theme ============

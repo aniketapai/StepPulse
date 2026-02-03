@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
-import '../../providers/history_provider.dart';
+
 import '../../providers/step_provider.dart';
 import '../../providers/settings_provider.dart';
+import '../../providers/history_provider.dart';
 
 /// Progress screen content (for use in nav shell)
 class ProgressContent extends ConsumerStatefulWidget {
@@ -60,13 +61,15 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
 
   @override
   Widget build(BuildContext context) {
-    final history = ref.watch(historyProvider);
     final settings = ref.watch(settingsProvider);
     final storage = ref.watch(storageServiceProvider);
+    final stepState = ref.watch(stepProvider);
     final theme = Theme.of(context);
 
-    // Get history map for heatmap
-    final historyMap = storage.getHistoryMap(days: 365);
+    // Get history map for heatmap and include today's live steps
+    final historyMap = Map<String, int>.from(storage.getHistoryMap(days: 365));
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    historyMap[todayStr] = stepState.todaySteps;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -138,58 +141,8 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
 
             const SizedBox(height: 24),
 
-            // Recent Activity
-            Text(
-              'Recent Activity',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            if (history.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(32),
-                decoration: AppTheme.cardDecoration,
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.history_rounded,
-                        size: 48,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No activity recorded yet',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Check back tomorrow!',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              // Filter out today from Recent Activity (today is shown in Today's Activity card)
-              ...(() {
-                final now = DateTime.now();
-                final todayStr = DateFormat('yyyy-MM-dd').format(now);
-                return history
-                    .where((item) => item.date != todayStr)
-                    .take(5)
-                    .map(
-                      (item) =>
-                          _buildActivityItem(context, item, settings.dailyGoal),
-                    );
-              })(),
+            // Steps History section
+            _buildStepsHistorySection(context, ref, settings.dailyGoal),
 
             const SizedBox(height: 120), // Space for nav bar
           ],
@@ -685,16 +638,71 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, dynamic item, int goal) {
-    final theme = Theme.of(context);
-    final date = DateTime.parse(item.date);
-    final isGoalMet = item.steps >= goal;
+  String _formatNumber(int number) {
+    return number.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+  }
 
-    String dateLabel;
+  Widget _buildStepsHistorySection(
+    BuildContext context,
+    WidgetRef ref,
+    int goal,
+  ) {
+    final theme = Theme.of(context);
+    final history = ref.watch(historyProvider);
+    final stepState = ref.watch(stepProvider);
+    final todaySteps = stepState.todaySteps;
+    final now = DateTime.now();
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(now);
+
+    // Combine today with history (limit to 7 items)
+    final allData = <dynamic>[
+      if (todaySteps > 0) {'date': todayDateStr, 'steps': todaySteps},
+      ...history.where((item) => item.date != todayDateStr).take(6),
+    ];
+
+    if (allData.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Steps History',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...allData.map((item) {
+          final steps = item is Map ? item['steps'] as int : item.steps as int;
+          final dateStr = item is Map
+              ? item['date'] as String
+              : item.date as String;
+          return _buildHistoryItem(context, dateStr, steps, goal);
+        }),
+      ],
+    );
+  }
+
+  Widget _buildHistoryItem(
+    BuildContext context,
+    String dateStr,
+    int steps,
+    int goal,
+  ) {
+    final theme = Theme.of(context);
+    final date = DateTime.parse(dateStr);
+    final isGoalMet = steps >= goal;
+    final stepsLeft = (goal - steps).clamp(0, goal);
+
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final itemDate = DateTime(date.year, date.month, date.day);
 
+    String dateLabel;
     if (itemDate == today) {
       dateLabel = 'Today';
     } else if (itemDate == today.subtract(const Duration(days: 1))) {
@@ -703,13 +711,11 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
       dateLabel = DateFormat('MMM d').format(date);
     }
 
-    final fullDate = DateFormat('EEEE, MMMM d, yyyy').format(date);
-
     return GestureDetector(
       onTap: () => _showActivityDialog(
         context,
-        date: fullDate,
-        steps: item.steps,
+        date: DateFormat('EEEE, MMMM d, yyyy').format(date),
+        steps: steps,
         goal: goal,
         isToday: itemDate == today,
       ),
@@ -746,21 +752,18 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                     ),
                   ),
                   Text(
-                    '${_formatNumber(item.steps)} steps',
+                    isGoalMet
+                        ? '${_formatNumber(steps)} steps • Goal met! 🎉'
+                        : '${_formatNumber(steps)} steps • ${_formatNumber(stepsLeft)} left',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: isGoalMet
+                          ? Colors.green.shade600
+                          : AppTheme.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            Text(
-              '+${((item.steps * 0.01).round() + (isGoalMet ? 50 : 0))} XP',
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: AppTheme.accentBlack,
-              ),
-            ),
-            const SizedBox(width: 8),
             Icon(
               Icons.chevron_right_rounded,
               color: AppTheme.textSecondary,
@@ -769,13 +772,6 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
           ],
         ),
       ),
-    );
-  }
-
-  String _formatNumber(int number) {
-    return number.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
     );
   }
 }

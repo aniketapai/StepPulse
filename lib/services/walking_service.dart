@@ -43,10 +43,35 @@ class WalkingService {
   /// Get current location
   Future<Position?> getCurrentLocation() async {
     try {
+      // First check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        onError?.call('Location services are disabled. Please enable GPS.');
+        return null;
+      }
+
+      // Check permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          onError?.call('Location permission denied.');
+          return null;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        onError?.call(
+          'Location permissions are permanently denied. Please enable in settings.',
+        );
+        return null;
+      }
+
+      // Get position with timeout to prevent hanging
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          distanceFilter: 5, // Minimum distance (meters) before update
+          timeLimit: Duration(seconds: 15),
         ),
       );
     } catch (e) {

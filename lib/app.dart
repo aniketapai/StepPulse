@@ -8,6 +8,7 @@ import 'screens/signin/sign_in_screen.dart';
 import 'screens/walk/walk_screen.dart';
 import 'screens/walk/walk_history_screen.dart';
 import 'screens/walk/walk_detail_screen.dart';
+import 'screens/profile/body_stats_screen.dart';
 import 'models/walk_session.dart';
 import 'providers/settings_provider.dart';
 import 'providers/sync_manager.dart';
@@ -96,6 +97,11 @@ class _StepPulseAppState extends ConsumerState<StepPulseApp>
             final walk = settings.arguments as WalkSession;
             return AppTheme.smoothPageRoute(
               page: WalkDetailScreen(walk: walk),
+              settings: settings,
+            );
+          case '/body-stats':
+            return AppTheme.smoothPageRoute(
+              page: const BodyStatsScreen(),
               settings: settings,
             );
           default:

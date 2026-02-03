@@ -20,7 +20,10 @@ class _StatsContentState extends ConsumerState<StatsContent>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   late List<Animation<double>> _fadeAnimations;
-  late List<Animation<Offset>> _slideAnimations;
+
+  // Time filter selection
+  int _selectedFilter = 1; // 0=1d, 1=1w, 2=1m, 3=1y, 4=All Time
+  final List<String> _filterLabels = ['1d', '1w', '1m', '1y', 'All'];
 
   @override
   void initState() {
@@ -46,24 +49,6 @@ class _StatsContentState extends ConsumerState<StatsContent>
       );
     });
 
-    _slideAnimations = List.generate(5, (index) {
-      final start = index * 0.12;
-      final end = start + 0.4;
-      return Tween<Offset>(
-        begin: const Offset(0, 0.1),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _animController,
-          curve: Interval(
-            start.clamp(0.0, 1.0),
-            end.clamp(0.0, 1.0),
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-    });
-
     _animController.forward();
   }
 
@@ -74,10 +59,53 @@ class _StatsContentState extends ConsumerState<StatsContent>
   }
 
   Widget _buildAnimatedChild(int index, Widget child) {
-    return FadeTransition(
-      opacity: _fadeAnimations[index],
-      child: SlideTransition(position: _slideAnimations[index], child: child),
-    );
+    return FadeTransition(opacity: _fadeAnimations[index], child: child);
+  }
+
+  /// Get data based on selected filter
+  List<StepData> _getFilteredData(List<StepData> history, int todaySteps) {
+    final now = DateTime.now();
+    final todayDateStr = DateFormat('yyyy-MM-dd').format(now);
+
+    // Filter out today from history to avoid duplicates
+    final historyWithoutToday = history
+        .where((item) => item.date != todayDateStr)
+        .toList();
+
+    int daysToShow;
+    switch (_selectedFilter) {
+      case 0: // 1 day - just today
+        return [
+          if (todaySteps > 0) StepData(date: todayDateStr, steps: todaySteps),
+        ];
+      case 1: // 1 week
+        daysToShow = 7;
+        break;
+      case 2: // 1 month
+        daysToShow = 30;
+        break;
+      case 3: // 1 year
+        daysToShow = 365;
+        break;
+      case 4: // All time
+        daysToShow = historyWithoutToday.length + 1;
+        break;
+      default:
+        daysToShow = 7;
+    }
+
+    final data = historyWithoutToday
+        .take(daysToShow - 1)
+        .toList()
+        .reversed
+        .toList();
+
+    // Add today's steps if available
+    if (todaySteps > 0) {
+      data.add(StepData(date: todayDateStr, steps: todaySteps));
+    }
+
+    return data;
   }
 
   @override
@@ -94,6 +122,9 @@ class _StatsContentState extends ConsumerState<StatsContent>
     // Include today's steps in calculations
     final todaySteps = stepState.todaySteps;
 
+    // Get filtered data for chart
+    final chartData = _getFilteredData(history, todaySteps);
+
     // Calculate stats (including today)
     final totalSteps =
         history.fold<int>(0, (sum, item) => sum + item.steps) + todaySteps;
@@ -107,38 +138,12 @@ class _StatsContentState extends ConsumerState<StatsContent>
               ? todaySteps
               : bestDayFromHistory.steps)
         : todaySteps;
-    final bestDayLabel = bestDayFromHistory != null
-        ? (todaySteps > bestDayFromHistory.steps
-              ? 'Today'
-              : DateFormat(
-                  'MMM d',
-                ).format(DateTime.parse(bestDayFromHistory.date)))
-        : (todaySteps > 0 ? 'Today' : 'no data');
     final daysWithGoal =
         history.where((h) => h.steps >= settings.dailyGoal).length +
         (todaySteps >= settings.dailyGoal ? 1 : 0);
 
-    // Get weekly data for chart (including today)
-    // Filter out today from history to avoid duplicates (we add today's live steps separately)
-    final todayDateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final weeklyDataFromHistory = history
-        .where((item) => item.date != todayDateStr)
-        .take(6)
-        .toList()
-        .reversed
-        .toList();
-    final weeklyData = [
-      ...weeklyDataFromHistory,
-      if (todaySteps > 0)
-        StepData(
-          date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-          steps: todaySteps,
-        ),
-    ];
-
     return SafeArea(
       child: SingleChildScrollView(
-        // ClampingScrollPhysics for smoother, more predictable scrolling
         physics: const ClampingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -147,121 +152,124 @@ class _StatsContentState extends ConsumerState<StatsContent>
             children: [
               const SizedBox(height: 20),
 
-              // Title - animated
+              // Header with step count
               _buildAnimatedChild(
                 0,
-                Center(
-                  child: Text(
-                    'Statistics',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textPrimary,
-                    ),
+                _buildHeader(context, todaySteps, settings.dailyGoal),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Time filter tabs
+              _buildAnimatedChild(1, _buildFilterTabs(context)),
+
+              const SizedBox(height: 20),
+
+              // Bar Chart Card
+              _buildAnimatedChild(
+                2,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: SizedBox(
+                    height: 220,
+                    child: chartData.isEmpty
+                        ? _buildEmptyChart(context)
+                        : _buildBarChart(
+                            chartData,
+                            settings.dailyGoal,
+                            theme,
+                            accentColor,
+                          ),
                   ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Weekly Graph Card - animated
-              _buildAnimatedChild(
-                1,
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: AppTheme.cardDecoration,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              // Check if we have any data at all
+              if (history.isEmpty && todaySteps == 0) ...[
+                // Zero state - no data yet
+                _buildAnimatedChild(
+                  3,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.directions_walk_rounded,
+                          size: 48,
+                          color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Your stats will appear after your first walk 👟',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                // Stats Grid - only show when data exists
+                _buildAnimatedChild(
+                  3,
+                  Row(
                     children: [
-                      Text(
-                        'This Week',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppTheme.textPrimary,
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          title: 'Total Steps',
+                          value: _formatNumber(totalSteps),
+                          subtitle: 'all time',
+                          icon: Icons.directions_walk_rounded,
+                          accentColor: accentColor,
+                          accentBgColor: accentBgColor,
                         ),
                       ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        height: 200,
-                        child: weeklyData.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.show_chart_rounded,
-                                      size: 48,
-                                      color: AppTheme.textSecondary.withValues(
-                                        alpha: 0.5,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'No activity yet',
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            color: AppTheme.textSecondary,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Start walking to see your chart!',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: AppTheme.textSecondary
-                                                .withValues(alpha: 0.7),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : _buildLineChart(
-                                weeklyData,
-                                settings.dailyGoal,
-                                theme,
-                                accentColor,
-                              ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          title: 'Average',
+                          value: _formatNumber(avgSteps),
+                          subtitle: 'per day',
+                          icon: Icons.analytics_rounded,
+                          accentColor: accentColor,
+                          accentBgColor: accentBgColor,
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
-              // Stats Grid - animated
-              _buildAnimatedChild(
-                2,
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        title: 'Total Steps',
-                        value: _formatNumber(totalSteps),
-                        subtitle: 'all time',
-                        icon: Icons.directions_walk_rounded,
-                        accentColor: accentColor,
-                        accentBgColor: accentBgColor,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        title: 'Average',
-                        value: _formatNumber(avgSteps),
-                        subtitle: 'per day',
-                        icon: Icons.analytics_rounded,
-                        accentColor: accentColor,
-                        accentBgColor: accentBgColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              _buildAnimatedChild(
-                3,
                 Row(
                   children: [
                     Expanded(
@@ -269,7 +277,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         context,
                         title: 'Best Day',
                         value: _formatNumber(bestDaySteps),
-                        subtitle: bestDayLabel,
+                        subtitle: 'personal best',
                         icon: Icons.emoji_events_rounded,
                         accentColor: accentColor,
                         accentBgColor: accentBgColor,
@@ -289,59 +297,9 @@ class _StatsContentState extends ConsumerState<StatsContent>
                     ),
                   ],
                 ),
-              ),
+              ],
 
-              const SizedBox(height: 24),
-
-              // Weekly Comparison
-              Text(
-                'Daily Breakdown',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: AppTheme.cardDecoration,
-                child: weeklyData.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 40,
-                                color: AppTheme.textSecondary.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Your daily activity will appear here',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : Column(
-                        children: weeklyData.map((day) {
-                          return _buildDayRow(
-                            context,
-                            day,
-                            settings.dailyGoal,
-                            accentColor,
-                          );
-                        }).toList(),
-                      ),
-              ),
-
-              const SizedBox(height: 120), // Space for nav bar
+              const SizedBox(height: 120),
             ],
           ),
         ),
@@ -349,7 +307,138 @@ class _StatsContentState extends ConsumerState<StatsContent>
     );
   }
 
-  Widget _buildLineChart(
+  Widget _buildHeader(BuildContext context, int todaySteps, int goal) {
+    final theme = Theme.of(context);
+    final stepsLeft = (goal - todaySteps).clamp(0, goal);
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.mintBackground,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.directions_walk_rounded,
+                color: AppTheme.accentBlack,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              _formatNumber(todaySteps),
+              style: theme.textTheme.displaySmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'steps',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          stepsLeft > 0
+              ? 'Take $stepsLeft more steps today!'
+              : 'Goal achieved! 🎉',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterTabs(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppTheme.mintBackground,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: List.generate(_filterLabels.length, (index) {
+          final isSelected = _selectedFilter == index;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedFilter = index),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: Text(
+                    _filterLabels[index],
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppTheme.accentBlack
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildEmptyChart(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.bar_chart_rounded,
+            size: 48,
+            color: AppTheme.textSecondary.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No activity yet',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Start walking to see your chart!',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarChart(
     List<StepData> data,
     int goal,
     ThemeData theme,
@@ -364,8 +453,16 @@ class _StatsContentState extends ConsumerState<StatsContent>
         ) *
         1.2;
 
-    return LineChart(
-      LineChartData(
+    // Limit displayed bars for readability
+    final displayData = data.length > 14
+        ? data.sublist(data.length - 14)
+        : data;
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxY,
+        minY: 0,
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
@@ -378,6 +475,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
             );
           },
         ),
+        borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
@@ -393,79 +491,69 @@ class _StatsContentState extends ConsumerState<StatsContent>
               showTitles: true,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index < 0 || index >= data.length) return const Text('');
+                if (index < 0 || index >= displayData.length) {
+                  return const Text('');
+                }
 
-                final date = DateTime.parse(data[index].date);
+                final date = DateTime.parse(displayData[index].date);
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    DateFormat('E').format(date),
-                    style: theme.textTheme.labelSmall,
+                    '${date.day}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 );
               },
             ),
           ),
         ),
-        borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: (data.length - 1).toDouble(),
-        minY: 0,
-        maxY: maxY,
-        lineBarsData: [
-          // Goal line
-          LineChartBarData(
-            spots: List.generate(
-              data.length,
-              (i) => FlSpot(i.toDouble(), goal.toDouble()),
-            ),
-            isCurved: false,
-            color: AppTheme.textSecondary.withValues(alpha: 0.3),
-            barWidth: 1,
-            dotData: const FlDotData(show: false),
-            dashArray: [5, 5],
-          ),
-          // Steps line
-          LineChartBarData(
-            spots: data.asMap().entries.map((e) {
-              return FlSpot(e.key.toDouble(), e.value.steps.toDouble());
-            }).toList(),
-            isCurved: true,
-            curveSmoothness: 0.3,
-            color: accentColor,
-            barWidth: 3,
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, bar, index) {
-                return FlDotCirclePainter(
-                  radius: 5,
-                  color: accentColor,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-            belowBarData: BarAreaData(
-              show: true,
-              color: accentColor.withValues(alpha: 0.1),
-            ),
-          ),
-        ],
-        lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
+        barGroups: displayData.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final isGoalMet = item.steps >= goal;
+
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: item.steps.toDouble(),
+                width: displayData.length > 10 ? 12 : 18,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(6),
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: isGoalMet
+                      ? [
+                          AppTheme.accentBlack.withValues(alpha: 0.7),
+                          AppTheme.accentBlack,
+                        ]
+                      : [
+                          AppTheme.textSecondary.withValues(alpha: 0.4),
+                          AppTheme.textSecondary.withValues(alpha: 0.6),
+                        ],
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
             getTooltipColor: (_) => accentColor,
             tooltipRoundedRadius: 8,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                return LineTooltipItem(
-                  '${spot.y.toInt()} steps',
-                  TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                );
-              }).toList();
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              return BarTooltipItem(
+                '${rod.toY.toInt()} steps',
+                const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              );
             },
           ),
         ),
@@ -485,7 +573,17 @@ class _StatsContentState extends ConsumerState<StatsContent>
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -517,87 +615,6 @@ class _StatsContentState extends ConsumerState<StatsContent>
             style: theme.textTheme.labelSmall?.copyWith(
               color: AppTheme.textSecondary,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDayRow(
-    BuildContext context,
-    StepData day,
-    int goal,
-    Color accentColor,
-  ) {
-    final theme = Theme.of(context);
-    final date = DateTime.parse(day.date);
-    final progress = (day.steps / goal).clamp(0.0, 1.0);
-    final isGoalMet = day.steps >= goal;
-
-    // Format date
-    String dateLabel;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final itemDate = DateTime(date.year, date.month, date.day);
-
-    if (itemDate == today) {
-      dateLabel = 'Today';
-    } else if (itemDate == today.subtract(const Duration(days: 1))) {
-      dateLabel = 'Yesterday';
-    } else {
-      dateLabel = DateFormat('EEEE').format(date);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              dateLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Container(
-              height: 8,
-              decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: progress,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isGoalMet ? accentColor : AppTheme.textSecondary,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 60,
-            child: Text(
-              _formatNumber(day.steps),
-              textAlign: TextAlign.right,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            isGoalMet ? Icons.check_circle_rounded : Icons.circle_outlined,
-            color: isGoalMet ? accentColor : AppTheme.textSecondary,
-            size: 16,
           ),
         ],
       ),

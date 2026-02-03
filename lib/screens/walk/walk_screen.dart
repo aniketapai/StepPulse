@@ -104,9 +104,36 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
 
   Future<void> _getCurrentLocation() async {
     try {
+      // First check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showLocationError(
+          'Location services are disabled. Please enable GPS.',
+        );
+        return;
+      }
+
+      // Check permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showLocationError('Location permission denied.');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showLocationError(
+          'Location permissions are permanently denied. Please enable in Settings.',
+        );
+        return;
+      }
+
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
         ),
       );
       setState(() {
@@ -117,8 +144,24 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
         _mapController.move(_currentLocation!, 16);
       } catch (_) {}
     } catch (e) {
-      // Location error - will use default position
+      _showLocationError('Could not get current location. Please try again.');
     }
+  }
+
+  void _showLocationError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Settings',
+          textColor: Colors.white,
+          onPressed: () => Geolocator.openLocationSettings(),
+        ),
+      ),
+    );
   }
 
   void _onSearchChanged(String query) {

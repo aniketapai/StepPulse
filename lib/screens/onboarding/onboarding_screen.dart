@@ -32,8 +32,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   // Collected data
   int _selectedGoal = 8000;
-  int _heightCm = 170;
-  int _weightKg = 70;
+  double _heightCm = 170.0;
+  double _weightKg = 70.0;
   bool _useMetric = true;
   bool _permissionGranted = false;
   bool _isSigningIn = false;
@@ -435,7 +435,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     ),
                     Text(
                       _useMetric
-                          ? '$_heightCm cm'
+                          ? '${_heightCm.toStringAsFixed(1)} cm'
                           : '${(_heightCm / 2.54).toStringAsFixed(1)} in',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: AppTheme.accentBlack,
@@ -456,12 +456,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     thumbColor: AppTheme.accentBlack,
                   ),
                   child: Slider(
-                    value: _heightCm.toDouble(),
+                    value: _heightCm,
                     min: 100,
                     max: 250,
-                    divisions: 150,
-                    onChanged: (value) =>
-                        setState(() => _heightCm = value.round()),
+                    divisions: 300,
+                    onChanged: (value) => setState(() => _heightCm = value),
                   ),
                 ),
               ],
@@ -490,7 +489,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     ),
                     Text(
                       _useMetric
-                          ? '$_weightKg kg'
+                          ? '${_weightKg.toStringAsFixed(1)} kg'
                           : '${(_weightKg * 2.205).toStringAsFixed(1)} lbs',
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: AppTheme.accentBlack,
@@ -511,12 +510,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     thumbColor: AppTheme.accentBlack,
                   ),
                   child: Slider(
-                    value: _weightKg.toDouble(),
+                    value: _weightKg,
                     min: 30,
                     max: 200,
-                    divisions: 170,
-                    onChanged: (value) =>
-                        setState(() => _weightKg = value.round()),
+                    divisions: 340,
+                    onChanged: (value) => setState(() => _weightKg = value),
                   ),
                 ),
               ],
@@ -528,8 +526,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           _buildNextButton('Continue', () async {
             // Save measurements - await to ensure they're saved before navigation
             final storage = ref.read(storageServiceProvider);
-            await storage.setHeightCm(_heightCm);
-            await storage.setWeightKg(_weightKg);
+            await storage.setHeightCm(_heightCm.round());
+            await storage.setWeightKg(_weightKg.round());
             await ref.read(settingsProvider.notifier).setUseMetric(_useMetric);
             _nextPage();
           }),
@@ -623,17 +621,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             _buildNextButton('Allow Permissions', _requestPermissions)
           else
             _buildNextButton('Continue', _nextPage),
-
-          if (!_permissionGranted)
-            TextButton(
-              onPressed: _nextPage,
-              child: Text(
-                'Skip for now',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ),
 
           const SizedBox(height: 20),
         ],

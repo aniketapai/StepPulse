@@ -25,7 +25,6 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
   // Animation controllers
   late AnimationController _animController;
   late List<Animation<double>> _fadeAnimations;
-  late List<Animation<Offset>> _slideAnimations;
 
   @override
   void initState() {
@@ -56,24 +55,6 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
       );
     });
 
-    _slideAnimations = List.generate(5, (index) {
-      final start = index * 0.12;
-      final end = start + 0.4;
-      return Tween<Offset>(
-        begin: const Offset(0, 0.1),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: _animController,
-          curve: Interval(
-            start.clamp(0.0, 1.0),
-            end.clamp(0.0, 1.0),
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-    });
-
     _animController.forward();
   }
 
@@ -85,10 +66,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
   }
 
   Widget _buildAnimatedChild(int index, Widget child) {
-    return FadeTransition(
-      opacity: _fadeAnimations[index],
-      child: SlideTransition(position: _slideAnimations[index], child: child),
-    );
+    return FadeTransition(opacity: _fadeAnimations[index], child: child);
   }
 
   @override
@@ -394,113 +372,147 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
 
             const SizedBox(height: 20),
 
-            // Streaks Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: AppTheme.cardDecoration,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.local_fire_department_rounded,
-                          color: AppTheme.accentBlack,
-                          size: 28,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${xp.currentStreak}',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Current\nStreak',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+            // Progressive disclosure: lock streak features until first activity
+            if (xp.totalDaysActive == 0) ...[
+              // Locked state - no activity yet
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: AppTheme.cardDecoration,
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 48,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
                     ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 60,
-                    color: AppTheme.mintBackground,
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.emoji_events_rounded,
-                          color: AppTheme.accentBlack,
-                          size: 28,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${xp.longestStreak}',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Longest\nStreak',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 12),
+                    Text(
+                      'Complete your first day to unlock streaks 🔥',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 60,
-                    color: AppTheme.mintBackground,
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          color: AppTheme.accentBlack,
-                          size: 28,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${xp.totalDaysActive}',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Days\nActive',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Start walking to track your progress and earn streak rewards!',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ] else ...[
+              // Streaks Card - only show when user has activity
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: AppTheme.cardDecoration,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.local_fire_department_rounded,
+                            color: AppTheme.accentBlack,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${xp.currentStreak}',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Current\nStreak',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 60,
+                      color: AppTheme.mintBackground,
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.emoji_events_rounded,
+                            color: AppTheme.accentBlack,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${xp.longestStreak}',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Longest\nStreak',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 60,
+                      color: AppTheme.mintBackground,
+                    ),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            color: AppTheme.accentBlack,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${xp.totalDaysActive}',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            'Days\nActive',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Streak Calendar - Row of fire icons for recent days
-            _buildStreakCalendar(context, storage, theme),
+              // Streak Calendar - Row of fire icons for recent days
+              _buildStreakCalendar(context, storage, theme),
 
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Streak Freeze Card
-            _buildStreakFreezeCard(context, xp, accentColor, theme),
+              // Streak Freeze Card
+              _buildStreakFreezeCard(context, xp, accentColor, theme),
+            ],
 
             const SizedBox(height: 20),
 
@@ -890,213 +902,240 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     // BMI position on scale (15-40 range mapped to 0-1)
     final bmiPosition = ((bmi - 15) / 25).clamp(0.0, 1.0);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: accentBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.monitor_weight_rounded,
-                  color: accentColor,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Body Mass Index',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // BMI Value and Category
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                bmi.toStringAsFixed(1),
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: categoryColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  category,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: categoryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // BMI Scale
-          Stack(
-            children: [
-              // Background gradient bar
-              Container(
-                height: 12,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Colors.blue,
-                      Colors.green,
-                      Colors.yellow,
-                      Colors.orange,
-                      Colors.red,
-                    ],
-                  ),
-                ),
-              ),
-              // Position indicator
-              Positioned(
-                left:
-                    bmiPosition * (MediaQuery.of(context).size.width - 80) - 8,
-                top: -4,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: categoryColor, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Scale labels
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '15',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              Text(
-                '18.5',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              Text(
-                '25',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              Text(
-                '30',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              Text(
-                '40',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Height/Weight info
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/body-stats'),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.cardDecoration,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: accentBgColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  child: Icon(
+                    Icons.monitor_weight_rounded,
+                    color: accentColor,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.height_rounded, color: accentColor, size: 20),
-                      const SizedBox(height: 4),
                       Text(
-                        settings.useMetric
-                            ? '$heightCm cm'
-                            : '${(heightCm / 2.54).toStringAsFixed(1)} in',
-                        style: theme.textTheme.titleSmall?.copyWith(
+                        'Body Mass Index',
+                        style: theme.textTheme.titleMedium?.copyWith(
                           color: AppTheme.textPrimary,
-                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Tap for TDEE & Weight Tracking',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 10,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: accentBgColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.monitor_weight_outlined,
-                        color: accentColor,
-                        size: 20,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        settings.useMetric
-                            ? '$weightKg kg'
-                            : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: AppTheme.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppTheme.textSecondary,
+                  size: 16,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // BMI Value and Category
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  bmi.toStringAsFixed(1),
+                  style: theme.textTheme.displayMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: categoryColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    category,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: categoryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // BMI Scale
+            Stack(
+              children: [
+                // Background gradient bar
+                Container(
+                  height: 12,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Colors.blue,
+                        Colors.green,
+                        Colors.yellow,
+                        Colors.orange,
+                        Colors.red,
+                      ],
+                    ),
+                  ),
+                ),
+                // Position indicator
+                Positioned(
+                  left:
+                      bmiPosition * (MediaQuery.of(context).size.width - 80) -
+                      8,
+                  top: -4,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: categoryColor, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Scale labels
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '15',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '18.5',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '25',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '30',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '40',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Height/Weight info
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: accentBgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.height_rounded,
+                          color: accentColor,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          settings.useMetric
+                              ? '$heightCm cm'
+                              : '${(heightCm / 2.54).toStringAsFixed(1)} in',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: accentBgColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.monitor_weight_outlined,
+                          color: accentColor,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          settings.useMetric
+                              ? '$weightKg kg'
+                              : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
