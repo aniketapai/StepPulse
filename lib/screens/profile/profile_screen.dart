@@ -494,6 +494,11 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
 
             const SizedBox(height: 16),
 
+            // Streak Calendar - Row of fire icons for recent days
+            _buildStreakCalendar(context, storage, theme),
+
+            const SizedBox(height: 16),
+
             // Streak Freeze Card
             _buildStreakFreezeCard(context, xp, accentColor, theme),
 
@@ -664,6 +669,191 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
       ref.read(syncManagerProvider).onSettingsChanged();
     }
     setState(() => _isEditingName = false);
+  }
+
+  Widget _buildStreakCalendar(BuildContext context, storage, ThemeData theme) {
+    // Get history map for the last 14 days
+    final historyMap = storage.getHistoryMap(days: 14);
+    final now = DateTime.now();
+    final weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon and title
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.orange.shade400,
+                      Colors.deepOrange.shade500,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Activity Streak',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Last 14 days',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Calendar grid - 7 days per row
+          Column(
+            children: [
+              // First row: 7 days ago to 1 day ago
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(7, (index) {
+                  final date = now.subtract(Duration(days: 13 - index));
+                  final dateStr =
+                      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                  final steps = historyMap[dateStr] ?? 0;
+                  final isActive = steps > 0;
+
+                  return _buildDayCell(date, isActive, false, weekDays, theme);
+                }),
+              ),
+              const SizedBox(height: 12),
+              // Second row: last 7 days including today
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(7, (index) {
+                  final date = now.subtract(Duration(days: 6 - index));
+                  final dateStr =
+                      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+                  final steps = historyMap[dateStr] ?? 0;
+                  final isActive = steps > 0;
+                  final isToday = index == 6;
+
+                  return _buildDayCell(
+                    date,
+                    isActive,
+                    isToday,
+                    weekDays,
+                    theme,
+                  );
+                }),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDayCell(
+    DateTime date,
+    bool isActive,
+    bool isToday,
+    List<String> weekDays,
+    ThemeData theme,
+  ) {
+    return Column(
+      children: [
+        // Day letter
+        Text(
+          weekDays[date.weekday % 7],
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: AppTheme.textSecondary,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Fire icon or empty indicator
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive
+                ? Colors.orange.shade50
+                : isToday
+                ? AppTheme.mintBackground
+                : Colors.grey.shade100,
+            border: isToday && !isActive
+                ? Border.all(color: AppTheme.accentBlack, width: 2)
+                : null,
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: isActive
+                ? ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.orange.shade400,
+                        Colors.deepOrange.shade600,
+                      ],
+                    ).createShader(bounds),
+                    child: const Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  )
+                : Text(
+                    '${date.day}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: isToday
+                          ? AppTheme.accentBlack
+                          : AppTheme.textSecondary,
+                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 11,
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBmiCard(

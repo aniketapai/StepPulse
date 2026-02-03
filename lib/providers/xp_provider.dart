@@ -29,6 +29,28 @@ class XpNotifier extends StateNotifier<XpData> {
 
     final now = DateTime.now();
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final yesterday = now.subtract(const Duration(days: 1));
+
+    // Auto-expire streak freeze if the freeze date is older than yesterday
+    // This allows users to activate a new freeze for a subsequent missed day
+    if (state.streakFreezeActive && state.streakFreezeDate != null) {
+      final freezeDate = state.streakFreezeDate!;
+      final freezeDay = DateTime(
+        freezeDate.year,
+        freezeDate.month,
+        freezeDate.day,
+      );
+      final yesterdayDay = DateTime(
+        yesterday.year,
+        yesterday.month,
+        yesterday.day,
+      );
+      if (freezeDay.isBefore(yesterdayDay)) {
+        // Freeze date has passed, deactivate it
+        state = state.copyWith(streakFreezeActive: false);
+        _storage.saveXpData(state.toMap());
+      }
+    }
 
     // Calculate current streak (consecutive days with steps, starting from today/yesterday)
     // A streak freeze can protect a day with 0 steps
