@@ -57,39 +57,47 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
 
   /// Load cached leaderboard data
   void _loadFromCache() {
-    final cachedData = _storage.getCachedLeaderboard();
-    if (cachedData != null) {
-      final lastFetchedStr = cachedData['lastFetched'] as String?;
-      final lastFetched = lastFetchedStr != null
-          ? DateTime.tryParse(lastFetchedStr)
-          : null;
+    try {
+      final cachedData = _storage.getCachedLeaderboard();
+      if (cachedData != null) {
+        final lastFetchedStr = cachedData['lastFetched'] as String?;
+        final lastFetched = lastFetchedStr != null
+            ? DateTime.tryParse(lastFetchedStr)
+            : null;
 
-      // Check if cache is still valid
-      if (lastFetched != null &&
-          DateTime.now().difference(lastFetched) < _cacheDuration) {
-        final entriesData = cachedData['entries'] as List<dynamic>? ?? [];
-        final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+        // Check if cache is still valid
+        if (lastFetched != null &&
+            DateTime.now().difference(lastFetched) < _cacheDuration) {
+          final entriesData = cachedData['entries'] as List<dynamic>? ?? [];
+          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-        final entries = <LeaderboardEntry>[];
-        for (int i = 0; i < entriesData.length; i++) {
-          final entry = entriesData[i] as Map<String, dynamic>;
-          entries.add(
-            LeaderboardEntry.fromMap(
-              entry,
-              i + 1,
-              isCurrentUser: entry['userId'] == currentUserId,
-            ),
+          final entries = <LeaderboardEntry>[];
+          for (int i = 0; i < entriesData.length; i++) {
+            final entry = entriesData[i];
+            if (entry is Map) {
+              entries.add(
+                LeaderboardEntry.fromMap(
+                  Map<String, dynamic>.from(entry),
+                  i + 1,
+                  isCurrentUser: entry['userId'] == currentUserId,
+                ),
+              );
+            }
+          }
+
+          state = state.copyWith(
+            entries: entries,
+            userRank: cachedData['userRank'] as int?,
+            totalUsers: cachedData['totalUsers'] as int? ?? 0,
+            lastFetched: lastFetched,
           );
+          print('✅ Loaded leaderboard from cache (${entries.length} entries)');
         }
-
-        state = state.copyWith(
-          entries: entries,
-          userRank: cachedData['userRank'] as int?,
-          totalUsers: cachedData['totalUsers'] as int? ?? 0,
-          lastFetched: lastFetched,
-        );
-        print('✅ Loaded leaderboard from cache (${entries.length} entries)');
       }
+    } catch (e) {
+      // If cache is corrupted, clear it and continue with empty state
+      print('⚠️ Failed to load leaderboard cache: $e');
+      _storage.clearLeaderboardCache();
     }
   }
 
