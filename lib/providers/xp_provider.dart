@@ -75,10 +75,11 @@ class XpNotifier extends StateNotifier<XpData> {
       }
     }
 
-    // Calculate longest streak and total days active
+    // Calculate longest streak, total days active, and total steps all time
     int longestStreak = 0;
     int tempStreak = 0;
     int totalDaysActive = 0;
+    int totalStepsAllTime = 0;
     DateTime? lastActiveDate;
 
     // Sort dates chronologically
@@ -123,6 +124,9 @@ class XpNotifier extends StateNotifier<XpData> {
       if (steps > 0) {
         totalDaysActive++;
       }
+
+      // Accumulate total steps all time
+      totalStepsAllTime += steps;
     }
 
     // Update state with calculated values
@@ -131,6 +135,7 @@ class XpNotifier extends StateNotifier<XpData> {
       longestStreak:
           longestStreak, // Always use recalculated value from history
       totalDaysActive: totalDaysActive,
+      totalStepsAllTime: totalStepsAllTime,
       lastActiveDate: lastActiveDate ?? state.lastActiveDate,
     );
 
