@@ -36,12 +36,21 @@ class FirestoreService {
           'weight': _localStorage.weightKg,
           'goal': _localStorage.dailyGoal,
           'memberSince': _localStorage.memberSince,
+          // Body stats for BMR/TDEE calculations
+          'age': _localStorage.age,
+          'gender': _localStorage.gender,
+          'activityLevel': _localStorage.activityLevel,
         },
         'stats': _localStorage.getXpData() ?? {},
         'settings': {
           'useMetric': _localStorage.useMetric,
           'isOnboardingComplete': _localStorage.isOnboardingComplete,
+          'dashboardTheme': _localStorage.dashboardTheme,
         },
+        // Weight history for trend tracking
+        'weightHistory': _localStorage.getWeightHistory(),
+        // Rest day dates
+        'restDayDates': _localStorage.restDayDates.toList(),
         'lastSyncedAt': FieldValue.serverTimestamp(),
         'device': 'flutter_app', // simplified
       };
@@ -121,6 +130,16 @@ class FirestoreService {
         if (profile['goal'] != null && profile['goal'] > 0) {
           await _localStorage.setDailyGoal(profile['goal']);
         }
+        // Sync body stats for BMR/TDEE calculations
+        if (profile['age'] != null && profile['age'] > 0) {
+          await _localStorage.setAge(profile['age']);
+        }
+        if (profile['gender'] != null) {
+          await _localStorage.setGender(profile['gender']);
+        }
+        if (profile['activityLevel'] != null) {
+          await _localStorage.setActivityLevel(profile['activityLevel']);
+        }
       }
 
       // 2. Sync Settings (only preference settings, NOT onboarding status)
@@ -129,8 +148,62 @@ class FirestoreService {
         if (settings.containsKey('useMetric')) {
           await _localStorage.setUseMetric(settings['useMetric'] ?? true);
         }
+        if (settings.containsKey('dashboardTheme')) {
+          await _localStorage.setDashboardTheme(
+            settings['dashboardTheme'] ?? 0,
+          );
+        }
         // NOTE: We intentionally DO NOT sync isOnboardingComplete
         // to prevent re-login loops and data loss scenarios
+      }
+
+      // 5. Sync Weight History
+      if (data.containsKey('weightHistory')) {
+        final cloudWeightHistory = data['weightHistory'] as List<dynamic>?;
+        if (cloudWeightHistory != null && cloudWeightHistory.isNotEmpty) {
+          // Merge with local - keep entries with latest data
+          final localHistory = _localStorage.getWeightHistory();
+          final mergedDates = <String, double>{};
+
+          // Add local entries first
+          for (final entry in localHistory) {
+            final date = entry['date'] as String?;
+            final weight = (entry['weight'] as num?)?.toDouble();
+            if (date != null && weight != null) {
+              mergedDates[date] = weight;
+            }
+          }
+
+          // Cloud entries override local (cloud wins for same date)
+          for (final entry in cloudWeightHistory) {
+            if (entry is Map) {
+              final date = entry['date'] as String?;
+              final weight = (entry['weight'] as num?)?.toDouble();
+              if (date != null && weight != null) {
+                mergedDates[date] = weight;
+              }
+            }
+          }
+
+          // Save merged weight history
+          for (final entry in mergedDates.entries) {
+            await _localStorage.addWeightEntry(entry.value, date: entry.key);
+          }
+          dataUpdated = true;
+        }
+      }
+
+      // 6. Sync Rest Day Dates
+      if (data.containsKey('restDayDates')) {
+        final cloudRestDays = data['restDayDates'] as List<dynamic>?;
+        if (cloudRestDays != null) {
+          for (final date in cloudRestDays) {
+            if (date is String) {
+              await _localStorage.setRestDay(date, true);
+            }
+          }
+          dataUpdated = true;
+        }
       }
 
       // 3. Sync XP/Stats (Cloud wins - these are earned progress)
@@ -254,6 +327,71 @@ class FirestoreService {
       print('✅ Walk deleted from cloud: $walkId');
     } catch (e) {
       print('⚠️ Error deleting walk from cloud: $e');
+    }
+  }
+
+  /// Fetch global leaderboard - top users by XP
+  /// Returns list of user documents ordered by totalXp descending
+  /// Limited to top 50 users to minimize reads
+  Future<List<Map<String, dynamic>>> fetchLeaderboard({int limit = 50}) async {
+    try {
+      final snapshot = await _users
+          .orderBy('stats.totalXp', descending: true)
+          .limit(limit)
+          .get();
+
+      final results = <Map<String, dynamic>>[];
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        results.add({...data, 'userId': doc.id});
+      }
+
+      print('✅ Fetched leaderboard: ${results.length} users');
+      return results;
+    } catch (e) {
+      print('⚠️ Error fetching leaderboard: $e');
+      return [];
+    }
+  }
+
+  /// Get total count of users for leaderboard display
+  Future<int> getTotalUserCount() async {
+    try {
+      final snapshot = await _users.count().get();
+      return snapshot.count ?? 0;
+    } catch (e) {
+      print('⚠️ Error getting user count: $e');
+      return 0;
+    }
+  }
+
+  /// Get current user's rank in the leaderboard
+  /// Returns null if user not found or not logged in
+  Future<int?> getCurrentUserRank() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    try {
+      // Get current user's XP
+      final userDoc = await _users.doc(user.uid).get();
+      if (!userDoc.exists) return null;
+
+      final userData = userDoc.data() as Map<String, dynamic>;
+      final stats = userData['stats'] as Map<String, dynamic>?;
+      final userXp = stats?['totalXp'] as int? ?? 0;
+
+      // Count users with more XP (rank = count + 1)
+      final higherRankedSnapshot = await _users
+          .where('stats.totalXp', isGreaterThan: userXp)
+          .count()
+          .get();
+
+      final rank = (higherRankedSnapshot.count ?? 0) + 1;
+      print('✅ Current user rank: #$rank with $userXp XP');
+      return rank;
+    } catch (e) {
+      print('⚠️ Error getting user rank: $e');
+      return null;
     }
   }
 }

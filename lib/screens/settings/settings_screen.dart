@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/sync_manager.dart';
 import '../../providers/auth_provider.dart';
@@ -273,6 +275,47 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             color: AppTheme.textSecondary,
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Export Data section
+                  RepaintBoundary(
+                    child: _buildSection(
+                      context,
+                      title: 'Export Data',
+                      icon: Icons.download_rounded,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Export your step history as a CSV file',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => _showExportDialog(),
+                              icon: const Icon(Icons.file_download_rounded),
+                              label: const Text('Export Step History'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentBlack,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -652,6 +695,169 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return number.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
+    );
+  }
+
+  void _showExportDialog() {
+    String selectedRange = '1 Month';
+    final ranges = ['1 Week', '1 Month', '6 Months', '1 Year', 'All Time'];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Export Step History',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Select time range to export',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: ranges.map((range) {
+                  final isSelected = range == selectedRange;
+                  return GestureDetector(
+                    onTap: () => setModalState(() => selectedRange = range),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppTheme.accentBlack
+                            : AppTheme.mintBackground,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        range,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : AppTheme.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _exportData(selectedRange);
+                  },
+                  icon: const Icon(Icons.share_rounded),
+                  label: const Text('Export & Share'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentBlack,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _exportData(String range) {
+    final storage = ref.read(storageServiceProvider);
+    final settings = ref.read(settingsProvider);
+    final goal = settings.dailyGoal;
+
+    // Determine days based on range
+    int days;
+    switch (range) {
+      case '1 Week':
+        days = 7;
+        break;
+      case '1 Month':
+        days = 30;
+        break;
+      case '6 Months':
+        days = 180;
+        break;
+      case '1 Year':
+        days = 365;
+        break;
+      default:
+        days = 3650; // 10 years = effectively all time
+    }
+
+    // Get history as map
+    final historyMap = storage.getHistoryMap(days: days);
+
+    if (historyMap.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No data to export for this period')),
+      );
+      return;
+    }
+
+    // Build CSV content
+    final buffer = StringBuffer();
+    buffer.writeln('Date,Steps,Goal,Goal Met');
+
+    // Sort dates in descending order (newest first)
+    final sortedDates = historyMap.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    for (final dateStr in sortedDates) {
+      final steps = historyMap[dateStr] ?? 0;
+      final goalMet = steps >= goal ? 'Yes' : 'No';
+      buffer.writeln('$dateStr,$steps,$goal,$goalMet');
+    }
+
+    final csvContent = buffer.toString();
+    final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final filename = 'steppulse_export_$dateStr.csv';
+
+    // Share as text with CSV content
+    Share.share(csvContent, subject: filename);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Exported ${sortedDates.length} days of data'),
+        backgroundColor: AppTheme.accentBlack,
+      ),
     );
   }
 }

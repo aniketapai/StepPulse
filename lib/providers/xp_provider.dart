@@ -7,8 +7,9 @@ import 'settings_provider.dart';
 /// XP provider for gamification
 class XpNotifier extends StateNotifier<XpData> {
   final StorageService _storage;
+  final int _dailyGoal;
 
-  XpNotifier(this._storage) : super(const XpData()) {
+  XpNotifier(this._storage, this._dailyGoal) : super(const XpData()) {
     _loadXpData();
   }
 
@@ -60,7 +61,7 @@ class XpNotifier extends StateNotifier<XpData> {
       final date = now.subtract(Duration(days: i));
       final dateStr = dateFormat.format(date);
       final steps = historyMap[dateStr] ?? 0;
-      if (steps > 0) {
+      if (steps >= _dailyGoal) {
         currentStreak++;
       } else if (i > 0) {
         // Check if streak freeze protects this day
@@ -87,8 +88,8 @@ class XpNotifier extends StateNotifier<XpData> {
       final dateStr = sortedDates[i];
       final steps = historyMap[dateStr] ?? 0;
 
-      if (steps > 0) {
-        totalDaysActive++;
+      if (steps >= _dailyGoal) {
+        // Only count toward streak if goal was hit
         final currentDate = DateTime.parse(dateStr);
 
         // Track last active date
@@ -102,7 +103,7 @@ class XpNotifier extends StateNotifier<XpData> {
           final prevDate = DateTime.parse(prevDateStr);
           final daysDiff = currentDate.difference(prevDate).inDays;
 
-          if (daysDiff == 1 && (historyMap[prevDateStr] ?? 0) > 0) {
+          if (daysDiff == 1 && (historyMap[prevDateStr] ?? 0) >= _dailyGoal) {
             // Consecutive day
             tempStreak++;
           } else {
@@ -117,14 +118,18 @@ class XpNotifier extends StateNotifier<XpData> {
           longestStreak = tempStreak;
         }
       }
+
+      // Days active = any day with walking (separate from streak)
+      if (steps > 0) {
+        totalDaysActive++;
+      }
     }
 
     // Update state with calculated values
     state = state.copyWith(
       currentStreak: currentStreak,
-      longestStreak: longestStreak > state.longestStreak
-          ? longestStreak
-          : state.longestStreak,
+      longestStreak:
+          longestStreak, // Always use recalculated value from history
       totalDaysActive: totalDaysActive,
       lastActiveDate: lastActiveDate ?? state.lastActiveDate,
     );
@@ -292,5 +297,6 @@ class XpNotifier extends StateNotifier<XpData> {
 /// Provider for XP state
 final xpProvider = StateNotifierProvider<XpNotifier, XpData>((ref) {
   final storage = ref.watch(storageServiceProvider);
-  return XpNotifier(storage);
+  final settings = ref.watch(settingsProvider);
+  return XpNotifier(storage, settings.dailyGoal);
 });

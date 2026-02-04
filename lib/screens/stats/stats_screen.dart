@@ -299,6 +299,11 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 ),
               ],
 
+              const SizedBox(height: 20),
+
+              // BMI Card
+              _buildAnimatedChild(4, _buildBmiCard(context, settings)),
+
               const SizedBox(height: 120),
             ],
           ),
@@ -625,6 +630,278 @@ class _StatsContentState extends ConsumerState<StatsContent>
     return number.toString().replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
+    );
+  }
+
+  Widget _buildBmiCard(BuildContext context, dynamic settings) {
+    final theme = Theme.of(context);
+    final heightCm = settings.heightCm;
+    final weightKg = settings.weightKg;
+    final bmi = settings.bmi;
+
+    // Get BMI category
+    String category;
+    Color categoryColor;
+    if (bmi < 18.5) {
+      category = 'Underweight';
+      categoryColor = Colors.blue;
+    } else if (bmi < 25) {
+      category = 'Normal';
+      categoryColor = Colors.green;
+    } else if (bmi < 30) {
+      category = 'Overweight';
+      categoryColor = Colors.orange;
+    } else {
+      category = 'Obese';
+      categoryColor = Colors.red;
+    }
+
+    // BMI position on scale (15-40 range mapped to 0-1)
+    final bmiPosition = ((bmi - 15) / 25).clamp(0.0, 1.0);
+
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/body-stats'),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.mintBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.monitor_weight_rounded,
+                    color: AppTheme.accentBlack,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Body Mass Index',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Tap for TDEE & Weight Tracking',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppTheme.textSecondary,
+                  size: 16,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // BMI Value and Category
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  bmi.toStringAsFixed(1),
+                  style: theme.textTheme.displayMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: categoryColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    category,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: categoryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // BMI Scale
+            Stack(
+              children: [
+                Container(
+                  height: 12,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Colors.blue,
+                        Colors.green,
+                        Colors.yellow,
+                        Colors.orange,
+                        Colors.red,
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left:
+                      bmiPosition * (MediaQuery.of(context).size.width - 80) -
+                      8,
+                  top: -4,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: categoryColor, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // Scale labels
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '15',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '18.5',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '25',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '30',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                Text(
+                  '40',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Height/Weight info
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.mintBackground,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.height_rounded,
+                          color: AppTheme.accentBlack,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          settings.useMetric
+                              ? '$heightCm cm'
+                              : '${(heightCm / 2.54).toStringAsFixed(1)} in',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.mintBackground,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.monitor_weight_outlined,
+                          color: AppTheme.accentBlack,
+                          size: 20,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          settings.useMetric
+                              ? '$weightKg kg'
+                              : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: AppTheme.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

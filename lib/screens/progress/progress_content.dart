@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -21,10 +22,29 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
   late List<Animation<double>> _fadeAnimations;
   late DateTime _selectedMonth; // For calendar navigation
 
+  // Motivational quotes carousel
+  static const List<String> _quotes = [
+    '"The journey of a thousand miles begins with a single step." - Lao Tzu',
+    '"Walking is man\'s best medicine." - Hippocrates',
+    '"An early-morning walk is a blessing for the whole day." - Henry David Thoreau',
+    '"All truly great thoughts are conceived while walking." - Friedrich Nietzsche',
+    '"Walking is the best possible exercise." - Thomas Jefferson',
+    '"Every step is progress, no matter how small."',
+    '"Your body can stand almost anything. It\'s your mind you need to convince."',
+    '"The only bad workout is the one that didn\'t happen."',
+    '"Believe you can and you\'re halfway there." - Theodore Roosevelt',
+    '"One step at a time is all it takes to get you there." - Emily Dickinson',
+  ];
+
+  late PageController _quoteController;
+  Timer? _autoScrollTimer;
+  int _currentQuoteIndex = 0;
+
   @override
   void initState() {
     super.initState();
     _selectedMonth = DateTime.now(); // Start with current month
+    _quoteController = PageController();
     _animController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -47,10 +67,26 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     });
 
     _animController.forward();
+    _startAutoScroll();
+  }
+
+  void _startAutoScroll() {
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_quoteController.hasClients) {
+        _currentQuoteIndex = (_currentQuoteIndex + 1) % _quotes.length;
+        _quoteController.animateToPage(
+          _currentQuoteIndex,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    _autoScrollTimer?.cancel();
+    _quoteController.dispose();
     _animController.dispose();
     super.dispose();
   }
@@ -95,6 +131,11 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             ),
 
             const SizedBox(height: 24),
+
+            // Motivational Quotes Carousel
+            _buildQuotesCarousel(theme),
+
+            const SizedBox(height: 16),
 
             // Activity Calendar
             Text(
@@ -771,6 +812,87 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuotesCarousel(ThemeData theme) {
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.accentBlack.withValues(alpha: 0.9),
+            AppTheme.accentBlack,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentBlack.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Quotes PageView
+          PageView.builder(
+            controller: _quoteController,
+            onPageChanged: (index) {
+              setState(() => _currentQuoteIndex = index);
+            },
+            itemCount: _quotes.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Center(
+                  child: Text(
+                    _quotes[index],
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Page Indicators
+          Positioned(
+            bottom: 8,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _quotes.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  width: _currentQuoteIndex == index ? 12 : 6,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(
+                      alpha: _currentQuoteIndex == index ? 0.9 : 0.3,
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

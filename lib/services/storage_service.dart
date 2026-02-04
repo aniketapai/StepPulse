@@ -426,8 +426,90 @@ class StorageService {
     await _settingsBox.put(_recentSearchesKey, searches);
   }
 
+  // Weekly Report
+  static const String kLastWeeklyReportViewed = 'last_weekly_report_viewed';
+
+  String? get lastWeeklyReportViewed =>
+      _settingsBox.get(kLastWeeklyReportViewed);
+
+  Future<void> setLastWeeklyReportViewed(String dateIso) async {
+    await _settingsBox.put(kLastWeeklyReportViewed, dateIso);
+  }
+
   /// Clear recent searches
   Future<void> clearRecentSearches() async {
     await _settingsBox.delete(_recentSearchesKey);
+  }
+
+  // ============ Rest Day Tracking ============
+
+  static const String _restDayDatesKey = 'rest_day_dates';
+
+  /// Get all dates marked as rest days
+  Set<String> get restDayDates {
+    final data = _settingsBox.get(_restDayDatesKey);
+    if (data == null) return {};
+    return Set<String>.from(data as List);
+  }
+
+  /// Check if today is a rest day
+  bool get isTodayRestDay {
+    final today = getTodayDateString();
+    return restDayDates.contains(today);
+  }
+
+  /// Check if a specific date is a rest day
+  bool isRestDay(String date) {
+    return restDayDates.contains(date);
+  }
+
+  /// Toggle rest day for today
+  Future<void> toggleTodayRestDay() async {
+    final today = getTodayDateString();
+    final dates = restDayDates;
+    if (dates.contains(today)) {
+      dates.remove(today);
+    } else {
+      dates.add(today);
+    }
+    await _settingsBox.put(_restDayDatesKey, dates.toList());
+  }
+
+  /// Set rest day status for a specific date
+  Future<void> setRestDay(String date, bool isRest) async {
+    final dates = restDayDates;
+    if (isRest) {
+      dates.add(date);
+    } else {
+      dates.remove(date);
+    }
+    // Keep only last 365 days to prevent unbounded growth
+    final cutoff = DateTime.now().subtract(const Duration(days: 365));
+    dates.removeWhere((d) {
+      final dateObj = DateTime.tryParse(d);
+      return dateObj != null && dateObj.isBefore(cutoff);
+    });
+    await _settingsBox.put(_restDayDatesKey, dates.toList());
+  }
+
+  // ============ Leaderboard Cache ============
+
+  static const String _leaderboardCacheKey = 'leaderboard_cache';
+
+  /// Get cached leaderboard data
+  Map<String, dynamic>? getCachedLeaderboard() {
+    final data = _settingsBox.get(_leaderboardCacheKey);
+    if (data == null) return null;
+    return Map<String, dynamic>.from(data as Map);
+  }
+
+  /// Set cached leaderboard data
+  Future<void> setCachedLeaderboard(Map<String, dynamic> data) async {
+    await _settingsBox.put(_leaderboardCacheKey, data);
+  }
+
+  /// Clear leaderboard cache
+  Future<void> clearLeaderboardCache() async {
+    await _settingsBox.delete(_leaderboardCacheKey);
   }
 }

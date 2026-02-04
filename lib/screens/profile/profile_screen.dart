@@ -2,12 +2,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/xp_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_manager.dart';
+import '../../providers/step_provider.dart';
+import 'package:intl/intl.dart';
 import '../../models/xp_data.dart';
+import 'weekly_report_dialog.dart';
+import 'leaderboard_sheet.dart';
+import '../../providers/leaderboard_provider.dart';
 
 /// Enhanced Profile screen content (for use in nav shell)
 class ProfileContent extends ConsumerStatefulWidget {
@@ -21,6 +27,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     with TickerProviderStateMixin {
   final _nameController = TextEditingController();
   bool _isEditingName = false;
+  bool _badgesExpanded = false;
 
   // Animation controllers
   late AnimationController _animController;
@@ -73,6 +80,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
   Widget build(BuildContext context) {
     final xp = ref.watch(xpProvider);
     final storage = ref.watch(storageServiceProvider);
+    final settings = ref.watch(settingsProvider);
     final theme = Theme.of(context);
 
     // Classic theme colors
@@ -100,7 +108,50 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(width: 44), // Balance for the settings icon
+                  // Bot Button
+                  GestureDetector(
+                    onTap: _showWeeklyReport,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Icon(
+                            Icons.smart_toy_rounded,
+                            size: 24,
+                            color: AppTheme.accentBlack,
+                          ),
+                          // Notification dot (Always visible & glowing)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.redAccent.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                    blurRadius: 6,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       'Profile',
@@ -255,6 +306,10 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                         color: AppTheme.textSecondary,
                       ),
                     ),
+
+                    // Achievement Badges Section
+                    const SizedBox(height: 16),
+                    _buildBadgesSection(context, theme, xp, storage),
                   ],
                 ),
               ),
@@ -366,6 +421,10 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
+
+                  // Leaderboard rank row
+                  _buildLeaderboardRow(context, theme),
                 ],
               ),
             ),
@@ -506,18 +565,18 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
               const SizedBox(height: 16),
 
               // Streak Calendar - Row of fire icons for recent days
-              _buildStreakCalendar(context, storage, theme),
+              _buildStreakCalendar(context, storage, theme, settings.dailyGoal),
 
               const SizedBox(height: 16),
 
               // Streak Freeze Card
               _buildStreakFreezeCard(context, xp, accentColor, theme),
+
+              const SizedBox(height: 16),
+
+              // Rest Day Toggle Card
+              _buildRestDayCard(context, theme),
             ],
-
-            const SizedBox(height: 20),
-
-            // BMI Card
-            _buildBmiCard(context, storage, accentColor, accentBgColor),
 
             const SizedBox(height: 120), // Space for nav bar
           ],
@@ -644,6 +703,82 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     );
   }
 
+  /// Build the leaderboard rank row with View All button
+  Widget _buildLeaderboardRow(BuildContext context, ThemeData theme) {
+    final leaderboard = ref.watch(leaderboardProvider);
+
+    // Auto-fetch leaderboard if not loaded yet
+    if (leaderboard.entries.isEmpty && !leaderboard.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(leaderboardProvider.notifier).fetchLeaderboard();
+      });
+    }
+
+    return GestureDetector(
+      onTap: () => showLeaderboardSheet(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.mintBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Trophy icon
+            Icon(
+              Icons.emoji_events_rounded,
+              color: Colors.amber.shade700,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+
+            // Rank text
+            if (leaderboard.isLoading && leaderboard.userRank == null)
+              Text(
+                'Loading rank...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              )
+            else if (leaderboard.userRank != null)
+              Text(
+                '#${leaderboard.userRank} of ${leaderboard.totalUsers} walkers',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              )
+            else
+              Text(
+                'View Leaderboard',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+
+            const Spacer(),
+
+            // View All button
+            Text(
+              'View All',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: AppTheme.accentBlack,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.accentBlack,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   String _formatNumber(int number) {
     if (number >= 1000) {
       return '${(number / 1000).toStringAsFixed(number % 1000 == 0 ? 0 : 1)}k';
@@ -671,6 +806,567 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     }
   }
 
+  // Badge definitions
+  static const List<Map<String, dynamic>> _badgeDefinitions = [
+    {
+      'id': 'first_flame',
+      'icon': Icons.local_fire_department_rounded,
+      'name': 'First Flame',
+      'desc': 'Complete your first day',
+      'colors': [Color(0xFFFF6B35), Color(0xFFFF9F1C)],
+    },
+    {
+      'id': 'goal_getter',
+      'icon': Icons.flag_rounded,
+      'name': 'Goal Getter',
+      'desc': 'Hit daily goal 7 times',
+      'colors': [Color(0xFF7B68EE), Color(0xFF9D4EDD)],
+    },
+    {
+      'id': 'marathon',
+      'icon': Icons.directions_run_rounded,
+      'name': 'Marathon',
+      'desc': 'Walk 42,195 total steps',
+      'colors': [Color(0xFF00C9A7), Color(0xFF00BFA6)],
+    },
+    {
+      'id': 'week_warrior',
+      'icon': Icons.bolt_rounded,
+      'name': 'Week Warrior',
+      'desc': 'Achieve a 7-day streak',
+      'colors': [Color(0xFFFFD93D), Color(0xFFFF9F1C)],
+    },
+    {
+      'id': 'month_master',
+      'icon': Icons.emoji_events_rounded,
+      'name': 'Month Master',
+      'desc': 'Achieve a 30-day streak',
+      'colors': [Color(0xFFFF6B6B), Color(0xFFEE5A5A)],
+    },
+    {
+      'id': 'centurion',
+      'icon': Icons.military_tech_rounded,
+      'name': 'Centurion',
+      'desc': '100 total days active',
+      'colors': [Color(0xFF4ECDC4), Color(0xFF2EC4B6)],
+    },
+    {
+      'id': 'club_100k',
+      'icon': Icons.workspace_premium_rounded,
+      'name': '100K Club',
+      'desc': 'Walk 100,000 total steps',
+      'colors': [Color(0xFF845EC2), Color(0xFFB39CD0)],
+    },
+    {
+      'id': 'half_million',
+      'icon': Icons.star_rounded,
+      'name': 'Half Million',
+      'desc': '500,000 total steps',
+      'colors': [Color(0xFFFF6F91), Color(0xFFFF9671)],
+    },
+    {
+      'id': 'millionaire',
+      'icon': Icons.diamond_rounded,
+      'name': 'Millionaire',
+      'desc': '1,000,000 total steps',
+      'colors': [Color(0xFFFFC75F), Color(0xFFFFE66D)],
+    },
+    {
+      'id': 'early_bird',
+      'icon': Icons.wb_sunny_rounded,
+      'name': 'Early Bird',
+      'desc': 'Complete goal before noon',
+      'colors': [Color(0xFFFFD166), Color(0xFFFCAB10)],
+    },
+    {
+      'id': 'overachiever',
+      'icon': Icons.rocket_launch_rounded,
+      'name': 'Overachiever',
+      'desc': 'Exceed daily goal by 50%',
+      'colors': [Color(0xFF06D6A0), Color(0xFF1B9AAA)],
+    },
+    {
+      'id': 'consistent',
+      'icon': Icons.repeat_rounded,
+      'name': 'Consistent',
+      'desc': 'Hit goal 3 days in a row',
+      'colors': [Color(0xFF118AB2), Color(0xFF073B4C)],
+    },
+  ];
+
+  Set<String> _getUnlockedBadges(XpData xp, dynamic storage) {
+    final unlocked = <String>{};
+    final historyMap = storage.getHistoryMap(days: 365);
+
+    // Calculate total steps from history
+    int totalSteps = 0;
+    int goalsHit = 0;
+    int consecutiveGoalDays = 0;
+    int maxConsecutiveGoals = 0;
+    final dailyGoal = ref.read(settingsProvider).dailyGoal;
+
+    final sortedDates = historyMap.keys.toList()..sort();
+    for (final dateStr in sortedDates) {
+      final steps = (historyMap[dateStr] ?? 0) as int;
+      totalSteps += steps;
+
+      if (steps >= dailyGoal) {
+        goalsHit++;
+        consecutiveGoalDays++;
+        if (consecutiveGoalDays > maxConsecutiveGoals) {
+          maxConsecutiveGoals = consecutiveGoalDays;
+        }
+      } else {
+        consecutiveGoalDays = 0;
+      }
+    }
+
+    // Check unlock conditions
+    if (xp.totalDaysActive >= 1) unlocked.add('first_flame');
+    if (goalsHit >= 7) unlocked.add('goal_getter');
+    if (totalSteps >= 42195) unlocked.add('marathon');
+    if (xp.longestStreak >= 7) unlocked.add('week_warrior');
+    if (xp.longestStreak >= 30) unlocked.add('month_master');
+    if (xp.totalDaysActive >= 100) unlocked.add('centurion');
+    if (totalSteps >= 100000) unlocked.add('club_100k');
+    if (totalSteps >= 500000) unlocked.add('half_million');
+    if (totalSteps >= 1000000) unlocked.add('millionaire');
+    if (maxConsecutiveGoals >= 3) unlocked.add('consistent');
+
+    // Early bird & overachiever - check today's data
+    final todaySteps = ref.read(stepProvider).todaySteps;
+    final now = DateTime.now();
+    if (todaySteps >= dailyGoal && now.hour < 12) unlocked.add('early_bird');
+    if (todaySteps >= (dailyGoal * 1.5)) unlocked.add('overachiever');
+
+    return unlocked;
+  }
+
+  Widget _buildBadgesSection(
+    BuildContext context,
+    ThemeData theme,
+    XpData xp,
+    dynamic storage,
+  ) {
+    final unlockedBadges = _getUnlockedBadges(xp, storage);
+    final unlockedCount = unlockedBadges.length;
+
+    return Column(
+      children: [
+        // Expandable header
+        GestureDetector(
+          onTap: () => setState(() => _badgesExpanded = !_badgesExpanded),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.mintBackground.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.emoji_events_rounded,
+                  size: 16,
+                  color: AppTheme.accentBlack,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '$unlockedCount / ${_badgeDefinitions.length} Badges',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: AppTheme.accentBlack,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _badgesExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: AppTheme.accentBlack,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Expanded badges grid
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 300),
+          crossFadeState: _badgesExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: const SizedBox(height: 0),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: _badgeDefinitions.map((badge) {
+                final isUnlocked = unlockedBadges.contains(badge['id']);
+                return _buildBadgeItem(badge, isUnlocked, theme);
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBadgeItem(
+    Map<String, dynamic> badge,
+    bool isUnlocked,
+    ThemeData theme,
+  ) {
+    final colors = badge['colors'] as List<Color>;
+
+    return GestureDetector(
+      onLongPress: () => _showBadgeTooltip(context, badge, isUnlocked),
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: isUnlocked
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: colors,
+                )
+              : null,
+          color: isUnlocked ? null : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: isUnlocked
+              ? [
+                  BoxShadow(
+                    color: colors[0].withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(
+              badge['icon'] as IconData,
+              size: 26,
+              color: isUnlocked ? Colors.white : Colors.grey.shade400,
+            ),
+            if (!isUnlocked)
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    size: 10,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBadgeTooltip(
+    BuildContext context,
+    Map<String, dynamic> badge,
+    bool isUnlocked,
+  ) {
+    final colors = badge['colors'] as List<Color>;
+
+    showDialog(
+      context: context,
+      barrierColor: Colors.black38,
+      builder: (context) => Center(
+        child: Container(
+          margin: const EdgeInsets.all(40),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  gradient: isUnlocked
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: colors,
+                        )
+                      : null,
+                  color: isUnlocked ? null : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: isUnlocked
+                      ? [
+                          BoxShadow(
+                            color: colors[0].withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  badge['icon'] as IconData,
+                  size: 36,
+                  color: isUnlocked ? Colors.white : Colors.grey.shade400,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                badge['name'] as String,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                badge['desc'] as String,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                isUnlocked ? '✓ Unlocked!' : '🔒 Keep walking to unlock',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isUnlocked ? Colors.green : Colors.grey,
+                ),
+              ),
+              if (isUnlocked) ...[
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _shareBadge(badge);
+                  },
+                  icon: const Icon(Icons.share_rounded, size: 18),
+                  label: const Text('Share'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors[0],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _shareBadge(Map<String, dynamic> badge) {
+    final name = badge['name'] as String;
+    final desc = badge['desc'] as String;
+    final text =
+        '🏆 I just unlocked the "$name" badge in StepPulse!\n\n'
+        '$desc\n\n'
+        '#StepPulse #WalkingChallenge #FitnessGoals';
+    Share.share(text);
+  }
+
+  Widget _buildRestDayCard(BuildContext context, ThemeData theme) {
+    final storage = ref.watch(storageServiceProvider);
+    final isRestDay = storage.isTodayRestDay;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isRestDay
+            ? Border.all(color: Colors.purple.shade300, width: 2)
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isRestDay
+                  ? Colors.purple.shade50
+                  : AppTheme.mintBackground,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.bedtime_rounded,
+              color: isRestDay ? Colors.purple.shade600 : AppTheme.accentBlack,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rest Day',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isRestDay
+                      ? 'Today is a rest day - streak protected'
+                      : 'Rest days won\'t break your streak',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: isRestDay
+                        ? Colors.purple.shade600
+                        : AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Toggle Switch
+          Transform.scale(
+            scale: 0.85,
+            child: Switch(
+              value: isRestDay,
+              onChanged: (value) async {
+                await storage.toggleTodayRestDay();
+                setState(() {});
+              },
+              activeThumbColor: Colors.purple.shade600,
+              activeTrackColor: Colors.purple.shade200,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showWeeklyReport() async {
+    final storage = ref.read(storageServiceProvider);
+    final settings = ref.read(settingsProvider);
+    final now = DateTime.now();
+
+    // Determine date range
+    // If Monday, show last week (Mon-Sun). Else show current week (Mon-Today)
+    final isMonday = now.weekday == DateTime.monday;
+
+    // Logic:
+    // If today is Monday: Show PREVIOUS week (Mon-Sun)
+    // If today is NOT Monday: Show CURRENT week (from Mon up to Today)
+
+    DateTime rangeStart;
+    DateTime rangeEnd;
+
+    if (isMonday) {
+      // Previous week: Last Monday to Last Sunday
+      // If today is Mon, subtract 7 days to get last Mon
+      rangeStart = now.subtract(const Duration(days: 7));
+      // End is last Sunday (yesterday)
+      rangeEnd = now.subtract(const Duration(days: 1));
+    } else {
+      // Current week: This Monday to Today
+      // If today is Tue (weekday 2), subtract 1 day to get Mon
+      rangeStart = now.subtract(Duration(days: now.weekday - 1));
+      rangeEnd = now;
+    }
+
+    // Normalize to date only to match storage keys
+    rangeStart = DateTime(rangeStart.year, rangeStart.month, rangeStart.day);
+    rangeEnd = DateTime(rangeEnd.year, rangeEnd.month, rangeEnd.day);
+
+    final daysToFetch = rangeEnd.difference(rangeStart).inDays + 1;
+    final historyMap = storage.getHistoryMap(days: 30); // Fetch recent history
+    final weeklyData = <Map<String, dynamic>>[];
+
+    // Get live steps for today if included in range
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    final liveSteps = ref.read(stepProvider).todaySteps;
+
+    for (int i = 0; i < daysToFetch; i++) {
+      final date = rangeStart.add(Duration(days: i));
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+
+      int steps = 0;
+      if (dateStr == todayStr) {
+        steps = liveSteps; // Use live steps for today
+      } else {
+        steps = historyMap[dateStr] ?? 0;
+      }
+
+      weeklyData.add({
+        'steps': steps,
+        'goal': settings.dailyGoal,
+        'date': dateStr,
+      });
+    }
+
+    // Mark as viewed if it's Monday (the "Weekly Report" day)
+    if (isMonday) {
+      await storage.setLastWeeklyReportViewed(
+        DateFormat('yyyy-MM-dd').format(now),
+      );
+      setState(() {}); // Refresh to hide dot
+    }
+
+    if (!mounted) return;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: Duration.zero,
+      pageBuilder: (context, anim1, anim2) {
+        return WeeklyReportDialog(
+          weeklyData: weeklyData,
+          onDismiss: () => Navigator.pop(context),
+        );
+      },
+    );
+  }
+
   void _saveName() {
     final name = _nameController.text.trim();
     if (name.isNotEmpty) {
@@ -683,7 +1379,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
     setState(() => _isEditingName = false);
   }
 
-  Widget _buildStreakCalendar(BuildContext context, storage, ThemeData theme) {
+  Widget _buildStreakCalendar(
+    BuildContext context,
+    storage,
+    ThemeData theme,
+    int dailyGoal,
+  ) {
     // Get history map for the last 14 days
     final historyMap = storage.getHistoryMap(days: 14);
     final now = DateTime.now();
@@ -759,7 +1460,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                   final dateStr =
                       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
                   final steps = historyMap[dateStr] ?? 0;
-                  final isActive = steps > 0;
+                  final isActive = steps >= dailyGoal;
 
                   return _buildDayCell(date, isActive, false, weekDays, theme);
                 }),
@@ -773,7 +1474,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
                   final dateStr =
                       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
                   final steps = historyMap[dateStr] ?? 0;
-                  final isActive = steps > 0;
+                  final isActive = steps >= dailyGoal;
                   final isToday = index == 6;
 
                   return _buildDayCell(

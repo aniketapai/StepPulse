@@ -8,7 +8,7 @@ const int kDefaultDailyGoal = 8000;
 const int kMinGoal = 2000;
 
 /// Maximum step goal
-const int kMaxGoal = 30000;
+const int kMaxGoal = 100000;
 
 /// Distance per step in kilometers (average stride length)
 const double kDistancePerStepKm = 0.0008;

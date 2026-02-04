@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../core/constants/app_constants.dart';
@@ -269,6 +270,11 @@ class StepNotifier extends StateNotifier<StepState> {
         // This is LOCAL ONLY - cloud sync happens once per day when day changes
         _storage.saveStepsForDate(state.currentDate, steps);
         _savedMilestones.add(milestone);
+
+        // Haptic celebration when goal is reached!
+        if (milestone == 100) {
+          HapticFeedback.heavyImpact();
+        }
 
         print(
           '💾 Milestone $milestone% reached ($steps/$goal steps) - saved to local storage',

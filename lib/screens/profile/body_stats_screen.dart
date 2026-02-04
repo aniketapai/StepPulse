@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/settings_provider.dart';
-import '../../services/storage_service.dart';
 
 /// Body Stats screen with BMI, TDEE calculator, and weight tracking
 class BodyStatsScreen extends ConsumerStatefulWidget {
@@ -18,6 +17,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
   String _selectedRange = '1M';
   // Weight history for reactive chart updates
   List<Map<String, dynamic>> _weightHistory = [];
+  // Selected point index for tooltip display
+  int? _selectedPointIndex;
 
   @override
   void initState() {
@@ -1079,20 +1080,185 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
     final effectiveMax = range > 0 ? maxWeight : maxWeight + 1;
     final padding = effectiveRange * 0.1;
 
+    final settings = ref.read(settingsProvider);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
 
-        return CustomPaint(
-          size: Size(width, height),
-          painter: _WeightChartPainter(
-            data: filteredData,
-            minWeight: effectiveMin - padding,
-            maxWeight: effectiveMax + padding,
-          ),
+        // Calculate point positions for touch detection
+        List<Offset> points = [];
+        for (var i = 0; i < filteredData.length; i++) {
+          final x = filteredData.length > 1
+              ? i / (filteredData.length - 1) * width
+              : width / 2;
+          final weightRange =
+              (effectiveMax + padding) - (effectiveMin - padding);
+          final weight = (filteredData[i]['weight'] as num).toDouble();
+          final y =
+              height -
+              ((weight - (effectiveMin - padding)) / weightRange * height);
+          points.add(Offset(x, y));
+        }
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // The chart
+            CustomPaint(
+              size: Size(width, height),
+              painter: _WeightChartPainter(
+                data: filteredData,
+                minWeight: effectiveMin - padding,
+                maxWeight: effectiveMax + padding,
+                selectedIndex: _selectedPointIndex,
+              ),
+            ),
+            // Touch detection layer
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanDown: (details) {
+                  _selectNearestPoint(details.localPosition, points);
+                },
+                onPanUpdate: (details) {
+                  _selectNearestPoint(details.localPosition, points);
+                },
+                onPanEnd: (_) {
+                  setState(() => _selectedPointIndex = null);
+                },
+                onPanCancel: () {
+                  setState(() => _selectedPointIndex = null);
+                },
+              ),
+            ),
+            // Vertical indicator line from tooltip to selected point
+            if (_selectedPointIndex != null &&
+                _selectedPointIndex! < filteredData.length &&
+                _selectedPointIndex! < points.length)
+              Positioned(
+                left: points[_selectedPointIndex!].dx - 1,
+                top: 50, // Start from below tooltip area
+                child: Container(
+                  width: 2,
+                  height: points[_selectedPointIndex!].dy - 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppTheme.accentBlack.withValues(alpha: 0.3),
+                        AppTheme.accentBlack.withValues(alpha: 0.8),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            // Tooltip overlay - positioned at top of chart, horizontally aligned with point
+            if (_selectedPointIndex != null &&
+                _selectedPointIndex! < filteredData.length &&
+                _selectedPointIndex! < points.length)
+              Positioned(
+                left: (points[_selectedPointIndex!].dx - 50).clamp(
+                  0,
+                  width - 100,
+                ),
+                top: 0, // Always at top of chart area
+                child: _buildChartTooltip(
+                  filteredData[_selectedPointIndex!],
+                  settings.useMetric,
+                  theme,
+                ),
+              ),
+          ],
         );
       },
+    );
+  }
+
+  void _selectNearestPoint(Offset touchPosition, List<Offset> points) {
+    if (points.isEmpty) return;
+
+    int nearestIndex = 0;
+    double minDistance = double.infinity;
+
+    for (var i = 0; i < points.length; i++) {
+      final distance = (points[i] - touchPosition).distance;
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestIndex = i;
+      }
+    }
+
+    // Only select if within reasonable distance (80 pixels)
+    if (minDistance < 80) {
+      setState(() => _selectedPointIndex = nearestIndex);
+    }
+  }
+
+  Widget _buildChartTooltip(
+    Map<String, dynamic> data,
+    bool useMetric,
+    ThemeData theme,
+  ) {
+    final weight = (data['weight'] as num).toDouble();
+    final dateStr = data['date'] as String;
+    final date = DateTime.tryParse(dateStr) ?? DateTime.now();
+
+    // Format date nicely
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final formattedDate = '${months[date.month - 1]} ${date.day}, ${date.year}';
+
+    final displayWeight = useMetric ? weight : weight * 2.205;
+    final unit = useMetric ? 'kg' : 'lbs';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.accentBlack,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${displayWeight.toStringAsFixed(1)} $unit',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            formattedDate,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1160,6 +1326,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textPrimary,
                       ),
+                      cursorColor: AppTheme.accentBlack,
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                       ),
@@ -1385,6 +1552,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                         fontWeight: FontWeight.w700,
                         color: AppTheme.textPrimary,
                       ),
+                      cursorColor: AppTheme.accentBlack,
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                       ),
@@ -1485,11 +1653,13 @@ class _WeightChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
   final double minWeight;
   final double maxWeight;
+  final int? selectedIndex;
 
   _WeightChartPainter({
     required this.data,
     required this.minWeight,
     required this.maxWeight,
+    this.selectedIndex,
   });
 
   @override
@@ -1553,20 +1723,31 @@ class _WeightChartPainter extends CustomPainter {
 
     // Draw dots
     for (var i = 0; i < points.length; i++) {
-      // Outer circle
-      canvas.drawCircle(points[i], 5, Paint()..color = AppTheme.accentBlack);
-      // Inner circle
-      canvas.drawCircle(points[i], 3, Paint()..color = Colors.white);
-    }
+      final isSelected = selectedIndex != null && i == selectedIndex;
+      final isLast = i == points.length - 1;
 
-    // Highlight last point
-    if (points.isNotEmpty) {
-      canvas.drawCircle(
-        points.last,
-        8,
-        Paint()..color = AppTheme.accentBlack.withValues(alpha: 0.2),
-      );
-      canvas.drawCircle(points.last, 5, Paint()..color = AppTheme.accentBlack);
+      if (isSelected) {
+        // Highlight selected point
+        canvas.drawCircle(
+          points[i],
+          12,
+          Paint()..color = AppTheme.accentBlack.withValues(alpha: 0.3),
+        );
+        canvas.drawCircle(points[i], 7, Paint()..color = AppTheme.accentBlack);
+        canvas.drawCircle(points[i], 4, Paint()..color = Colors.white);
+      } else if (isLast && selectedIndex == null) {
+        // Highlight last point when no selection
+        canvas.drawCircle(
+          points[i],
+          8,
+          Paint()..color = AppTheme.accentBlack.withValues(alpha: 0.2),
+        );
+        canvas.drawCircle(points[i], 5, Paint()..color = AppTheme.accentBlack);
+      } else {
+        // Regular point
+        canvas.drawCircle(points[i], 5, Paint()..color = AppTheme.accentBlack);
+        canvas.drawCircle(points[i], 3, Paint()..color = Colors.white);
+      }
     }
   }
 

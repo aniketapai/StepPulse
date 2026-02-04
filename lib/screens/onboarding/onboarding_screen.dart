@@ -223,7 +223,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   Widget _buildGoalPage() {
     final theme = Theme.of(context);
     const minGoal = 2000;
-    const maxGoal = 20000;
+    const maxGoal = 100000;
 
     return Padding(
       padding: const EdgeInsets.all(32),
