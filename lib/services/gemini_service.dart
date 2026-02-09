@@ -63,18 +63,18 @@ class GeminiService {
   /// Build system prompt with user context and response style
   String _buildSystemPrompt(Map<String, dynamic>? context, bool isDetailed) {
     final responseStyle = isDetailed
-        ? '''Response Style: DETAILED
-- Provide comprehensive explanations
-- Include relevant context and background
-- Explain the reasoning behind recommendations
-- Give multiple options when applicable
-- Include scientific explanations when helpful'''
+        ? '''Response Style: DETAILED (but not overwhelming)
+- Provide helpful context and brief explanations
+- Include 1-2 relevant reasons behind recommendations
+- Keep responses to 5-8 sentences maximum
+- Use simple bullet points when listing multiple items
+- Be informative but avoid lengthy paragraphs'''
         : '''Response Style: CONCISE
 - Give brief, to-the-point answers
 - Focus on actionable advice only
 - Keep explanations minimal
-- Use bullet points for lists
-- Maximum 3-4 sentences per response''';
+- Maximum 3-4 sentences per response
+- Get straight to the point''';
 
     if (context == null) {
       return '''You are a friendly and knowledgeable fitness assistant. Provide helpful, evidence-based fitness and nutrition advice. Be encouraging and supportive.
