@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/leaderboard_provider.dart';
 import '../../models/leaderboard_entry.dart';
+import 'user_profile_screen.dart';
 
 /// Bottom sheet displaying the global XP leaderboard
 class LeaderboardBottomSheet extends ConsumerStatefulWidget {
@@ -198,7 +199,20 @@ class _LeaderboardBottomSheetState
                     itemCount: leaderboard.entries.length,
                     itemBuilder: (context, index) {
                       final entry = leaderboard.entries[index];
-                      return _LeaderboardTile(entry: entry);
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserProfileScreen(
+                                userId: entry.userId,
+                                displayName: entry.displayName,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _LeaderboardTile(entry: entry),
+                      );
                     },
                   ),
           ),

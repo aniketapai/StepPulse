@@ -98,7 +98,13 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
             ProfileContent(key: ValueKey('profile')),
           ],
         ),
-        bottomNavigationBar: _buildBottomNav(),
+        bottomNavigationBar: SafeArea(
+          bottom: true,
+          left: false,
+          right: false,
+          top: false,
+          child: _buildBottomNav(),
+        ),
       ),
     );
   }

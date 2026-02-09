@@ -394,4 +394,23 @@ class FirestoreService {
       return null;
     }
   }
+
+  /// Get a specific user's data by userId
+  /// Used for viewing other users' profiles from leaderboard
+  Future<Map<String, dynamic>?> getUserData(String userId) async {
+    try {
+      final userDoc = await _users.doc(userId).get();
+      if (!userDoc.exists) {
+        print('⚠️ User not found: $userId');
+        return null;
+      }
+
+      final data = userDoc.data() as Map<String, dynamic>;
+      print('✅ Fetched user data for: $userId');
+      return {...data, 'userId': userId};
+    } catch (e) {
+      print('⚠️ Error fetching user data: $e');
+      return null;
+    }
+  }
 }

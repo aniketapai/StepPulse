@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import 'widgets/progress_ring.dart';
 import 'widgets/step_counter_display.dart';
 import 'widgets/stat_card.dart';
+import '../fitness_chat_screen.dart';
 
 /// Dashboard content (for use in nav shell - no bottom nav)
 class DashboardContent extends ConsumerStatefulWidget {
@@ -212,13 +213,46 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Center(
-      child: Text(
-        'StepPulse',
-        style: Theme.of(
-          context,
-        ).textTheme.titleLarge?.copyWith(color: AppTheme.textPrimary),
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const SizedBox(width: 48), // Balance for symmetry
+        Text(
+          'StepPulse',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(color: AppTheme.textPrimary),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FitnessChatScreen(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.accentBlack,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

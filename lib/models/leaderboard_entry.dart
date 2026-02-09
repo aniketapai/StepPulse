@@ -5,12 +5,14 @@ class LeaderboardEntry {
   final int totalXp;
   final int level;
   final bool isCurrentUser;
+  final String userId;
 
   const LeaderboardEntry({
     required this.rank,
     required this.displayName,
     required this.totalXp,
     required this.level,
+    required this.userId,
     this.isCurrentUser = false,
   });
 
@@ -34,11 +36,15 @@ class LeaderboardEntry {
         map['displayName'] as String? ??
         'Anonymous';
 
+    // Get userId from map (added by FirestoreService)
+    final userId = map['userId'] as String? ?? '';
+
     return LeaderboardEntry(
       rank: rank,
       displayName: displayName,
       totalXp: totalXp,
       level: level,
+      userId: userId,
       isCurrentUser: isCurrentUser,
     );
   }
@@ -87,5 +93,5 @@ class LeaderboardEntry {
 
   @override
   String toString() =>
-      'LeaderboardEntry(rank: $rank, name: $displayName, xp: $totalXp)';
+      'LeaderboardEntry(rank: $rank, name: $displayName, xp: $totalXp, userId: $userId)';
 }

@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../../models/xp_data.dart';
 import 'weekly_report_dialog.dart';
 import 'leaderboard_sheet.dart';
+import '../fitness_chat_screen.dart';
 import '../../providers/leaderboard_provider.dart';
 
 /// Enhanced Profile screen content (for use in nav shell)
@@ -725,6 +726,37 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // AI Assistant Button
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const FitnessChatScreen(),
+                  ),
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentBlack,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
             // Trophy icon
             Icon(
               Icons.emoji_events_rounded,

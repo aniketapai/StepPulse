@@ -1,6 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
 import '../core/constants/app_constants.dart';
+import '../models/chat_message.dart';
 import '../models/step_data.dart';
 
 /// Service for local data persistence using Hive
@@ -511,5 +512,39 @@ class StorageService {
   /// Clear leaderboard cache
   Future<void> clearLeaderboardCache() async {
     await _settingsBox.delete(_leaderboardCacheKey);
+  }
+
+  // ============ Chat History ============
+
+  static const String _chatHistoryKey = 'chat_history';
+
+  /// Get chat history
+  List<ChatMessage> getChatHistory() {
+    final data = _settingsBox.get(_chatHistoryKey);
+    if (data == null) return [];
+
+    try {
+      final list = data as List;
+      return list
+          .map(
+            (item) =>
+                ChatMessage.fromMap(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList();
+    } catch (e) {
+      print('Error loading chat history: $e');
+      return [];
+    }
+  }
+
+  /// Save chat history
+  Future<void> saveChatHistory(List<ChatMessage> messages) async {
+    final data = messages.map((m) => m.toMap()).toList();
+    await _settingsBox.put(_chatHistoryKey, data);
+  }
+
+  /// Clear chat history
+  Future<void> clearChatHistory() async {
+    await _settingsBox.delete(_chatHistoryKey);
   }
 }

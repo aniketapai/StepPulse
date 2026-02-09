@@ -1,0 +1,97 @@
+/// Service to interact with Google Gemini AI
+library;
+
+import 'dart:io';
+import 'package:google_generative_ai/google_generative_ai.dart';
+
+class GeminiService {
+  late final GenerativeModel _model;
+  static const String _apiKey = 'AIzaSyDL-UQ4Yl0mvEM-k78wk0u_TPm9aW8ghOk';
+
+  GeminiService() {
+    _model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: _apiKey);
+  }
+
+  /// Send a message to Gemini with optional images and user context
+  Future<String> sendMessage({
+    required String prompt,
+    List<File>? images,
+    Map<String, dynamic>? userContext,
+  }) async {
+    try {
+      // Build system prompt with user context
+      final systemPrompt = _buildSystemPrompt(userContext);
+      final fullPrompt = '$systemPrompt\n\nUser: $prompt';
+
+      // Prepare content
+      final content = <Content>[];
+
+      if (images != null && images.isNotEmpty) {
+        // Multi-modal request with images
+        final parts = <Part>[TextPart(fullPrompt)];
+
+        for (final image in images) {
+          final bytes = await image.readAsBytes();
+          parts.add(DataPart('image/jpeg', bytes));
+        }
+
+        content.add(Content.multi(parts));
+      } else {
+        // Text-only request
+        content.add(Content.text(fullPrompt));
+      }
+
+      final response = await _model.generateContent(content);
+      return response.text ?? 'Sorry, I could not generate a response.';
+    } on GenerativeAIException catch (e) {
+      print('❌ Gemini API Error: ${e.message}');
+      if (e.message.contains('API_KEY_INVALID') ||
+          e.message.contains('API key')) {
+        return '⚠️ Invalid API key. Please check your Gemini API key.';
+      }
+      if (e.message.contains('quota') || e.message.contains('limit')) {
+        return '⚠️ API quota exceeded. Please try again later.';
+      }
+      return '⚠️ API Error: ${e.message}';
+    } catch (e) {
+      print('❌ Unexpected Error: $e');
+      return '⚠️ Error: $e';
+    }
+  }
+
+  /// Build system prompt with user context
+  String _buildSystemPrompt(Map<String, dynamic>? context) {
+    if (context == null) {
+      return '''You are a friendly and knowledgeable fitness assistant. Provide helpful, evidence-based fitness and nutrition advice. Be encouraging and supportive. Keep responses concise and actionable.
+
+Important: Always add this disclaimer at the end of health advice: "Note: This is general guidance, not medical advice. Consult a healthcare professional for personalized recommendations."''';
+    }
+
+    final age = context['age'] ?? 'unknown';
+    final gender = context['gender'] ?? 'unknown';
+    final weight = context['weight'] ?? 'unknown';
+    final height = context['height'] ?? 'unknown';
+    final bmi = context['bmi'] ?? 'unknown';
+    final goal = context['goal'] ?? 'unknown';
+    final steps = context['steps'] ?? 'unknown';
+    final activityLevel = context['activityLevel'] ?? 'unknown';
+
+    return '''You are a friendly and knowledgeable fitness assistant helping a specific user. Provide helpful, evidence-based fitness and nutrition advice tailored to their profile.
+
+User Profile:
+- Age: $age, Gender: $gender
+- Weight: $weight kg, Height: $height cm, BMI: $bmi
+- Daily step goal: $goal, Today's steps: $steps
+- Activity level: $activityLevel
+
+Guidelines:
+- Be encouraging and supportive
+- Provide specific, actionable advice
+- Reference the user's data when relevant (e.g., "Based on your BMI of $bmi...")
+- For food images, estimate calories and macros
+- Keep responses concise and easy to understand
+- Be conversational and friendly
+
+Important: Always add this disclaimer at the end of health advice: "Note: This is general guidance, not medical advice. Consult a healthcare professional for personalized recommendations."''';
+  }
+}
