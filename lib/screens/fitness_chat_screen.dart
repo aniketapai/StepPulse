@@ -20,6 +20,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<File> _selectedImages = [];
+  bool _isDetailedMode = false; // Toggle for response length
 
   @override
   void dispose() {
@@ -66,6 +67,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
           images: _selectedImages.isNotEmpty
               ? List.from(_selectedImages)
               : null,
+          isDetailed: _isDetailedMode,
         );
 
     _textController.clear();
@@ -89,235 +91,296 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
-      appBar: AppBar(
-        backgroundColor: AppTheme.mintBackground,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: AppTheme.textPrimary,
-          ),
-          onPressed: () => Navigator.pop(context),
+    return Theme(
+      data: theme.copyWith(
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: AppTheme.accentBlack,
+          selectionColor: AppTheme.accentBlack.withValues(alpha: 0.3),
+          selectionHandleColor: AppTheme.accentBlack,
         ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppTheme.accentBlack,
-                    AppTheme.accentBlack.withValues(alpha: 0.8),
-                  ],
+      ),
+      child: Scaffold(
+        backgroundColor: AppTheme.mintBackground,
+        appBar: AppBar(
+          backgroundColor: AppTheme.mintBackground,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppTheme.textPrimary,
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.accentBlack,
+                      AppTheme.accentBlack.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                borderRadius: BorderRadius.circular(10),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              child: const Icon(
-                Icons.auto_awesome_rounded,
-                color: Colors.white,
-                size: 20,
+              const SizedBox(width: 12),
+              Text(
+                'Fitness Assistant',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            // Response mode toggle
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isDetailedMode = !_isDetailedMode;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _isDetailedMode
+                        ? AppTheme.accentBlack
+                        : AppTheme.accentBlack.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isDetailedMode
+                            ? Icons.subject_rounded
+                            : Icons.short_text_rounded,
+                        size: 16,
+                        color: _isDetailedMode
+                            ? Colors.white
+                            : AppTheme.accentBlack,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isDetailedMode ? 'Detailed' : 'Concise',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: _isDetailedMode
+                              ? Colors.white
+                              : AppTheme.accentBlack,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Fitness Assistant',
-              style: theme.textTheme.titleLarge?.copyWith(
+            PopupMenuButton(
+              icon: const Icon(
+                Icons.more_vert_rounded,
                 color: AppTheme.textPrimary,
-                fontWeight: FontWeight.w600,
+              ),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  child: const Text('Clear Chat'),
+                  onTap: () {
+                    ref.read(chatProvider.notifier).clearChat();
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Messages list
+            Expanded(
+              child: chatState.messages.isEmpty
+                  ? _buildEmptyState(theme)
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: chatState.messages.length,
+                      itemBuilder: (context, index) {
+                        final message = chatState.messages[index];
+                        return _buildMessageBubble(message, theme);
+                      },
+                    ),
+            ),
+
+            // Loading indicator
+            if (chatState.isLoading)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const SizedBox(width: 16),
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.accentBlack,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Thinking...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Image preview row
+            if (_selectedImages.isNotEmpty)
+              Container(
+                height: 100,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _selectedImages.length,
+                  itemBuilder: (context, index) {
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 80,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: FileImage(_selectedImages[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 12,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+
+            // Input field
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    // Camera button
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt_rounded),
+                      color: AppTheme.accentBlack,
+                      onPressed: () => _pickImage(ImageSource.camera),
+                    ),
+                    // Gallery button
+                    IconButton(
+                      icon: const Icon(Icons.photo_rounded),
+                      color: AppTheme.accentBlack,
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                    ),
+                    const SizedBox(width: 8),
+                    // Text field
+                    Expanded(
+                      child: TextField(
+                        controller: _textController,
+                        cursorColor: AppTheme.textPrimary,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 15,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Ask me anything...',
+                          hintStyle: TextStyle(
+                            color: AppTheme.textSecondary.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: AppTheme.mintBackground,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Send button
+                    GestureDetector(
+                      onTap: _sendMessage,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.accentBlack,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
-        actions: [
-          PopupMenuButton(
-            icon: const Icon(
-              Icons.more_vert_rounded,
-              color: AppTheme.textPrimary,
-            ),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                child: const Text('Clear Chat'),
-                onTap: () {
-                  ref.read(chatProvider.notifier).clearChat();
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Messages list
-          Expanded(
-            child: chatState.messages.isEmpty
-                ? _buildEmptyState(theme)
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: chatState.messages.length,
-                    itemBuilder: (context, index) {
-                      final message = chatState.messages[index];
-                      return _buildMessageBubble(message, theme);
-                    },
-                  ),
-          ),
-
-          // Loading indicator
-          if (chatState.isLoading)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const SizedBox(width: 16),
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppTheme.accentBlack,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Thinking...',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Image preview row
-          if (_selectedImages.isNotEmpty)
-            Container(
-              height: 100,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _selectedImages.length,
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      Container(
-                        width: 80,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: FileImage(_selectedImages[index]),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 12,
-                        child: GestureDetector(
-                          onTap: () => _removeImage(index),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-
-          // Input field
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  // Camera button
-                  IconButton(
-                    icon: const Icon(Icons.camera_alt_rounded),
-                    color: AppTheme.accentBlack,
-                    onPressed: () => _pickImage(ImageSource.camera),
-                  ),
-                  // Gallery button
-                  IconButton(
-                    icon: const Icon(Icons.photo_rounded),
-                    color: AppTheme.accentBlack,
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                  ),
-                  const SizedBox(width: 8),
-                  // Text field
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      cursorColor: AppTheme.textPrimary,
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 15,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Ask me anything...',
-                        hintStyle: TextStyle(
-                          color: AppTheme.textSecondary.withValues(alpha: 0.5),
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: AppTheme.mintBackground,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
-                      ),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Send button
-                  GestureDetector(
-                    onTap: _sendMessage,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: AppTheme.accentBlack,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -478,11 +541,14 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                         ),
                         const SizedBox(height: 12),
                       ],
-                      // Message text - selectable for copying
-                      SelectableText(
-                        message.text,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: isUser ? Colors.white : AppTheme.textPrimary,
+                      // Message text - selectable for copying with visible selection
+                      SelectionArea(
+                        child: SelectableText(
+                          message.text,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isUser ? Colors.white : AppTheme.textPrimary,
+                          ),
+                          selectionControls: MaterialTextSelectionControls(),
                         ),
                       ),
                     ],

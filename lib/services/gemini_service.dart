@@ -17,10 +17,11 @@ class GeminiService {
     required String prompt,
     List<File>? images,
     Map<String, dynamic>? userContext,
+    bool isDetailed = false,
   }) async {
     try {
-      // Build system prompt with user context
-      final systemPrompt = _buildSystemPrompt(userContext);
+      // Build system prompt with user context and response style
+      final systemPrompt = _buildSystemPrompt(userContext, isDetailed);
       final fullPrompt = '$systemPrompt\n\nUser: $prompt';
 
       // Prepare content
@@ -59,10 +60,26 @@ class GeminiService {
     }
   }
 
-  /// Build system prompt with user context
-  String _buildSystemPrompt(Map<String, dynamic>? context) {
+  /// Build system prompt with user context and response style
+  String _buildSystemPrompt(Map<String, dynamic>? context, bool isDetailed) {
+    final responseStyle = isDetailed
+        ? '''Response Style: DETAILED
+- Provide comprehensive explanations
+- Include relevant context and background
+- Explain the reasoning behind recommendations
+- Give multiple options when applicable
+- Include scientific explanations when helpful'''
+        : '''Response Style: CONCISE
+- Give brief, to-the-point answers
+- Focus on actionable advice only
+- Keep explanations minimal
+- Use bullet points for lists
+- Maximum 3-4 sentences per response''';
+
     if (context == null) {
-      return '''You are a friendly and knowledgeable fitness assistant. Provide helpful, evidence-based fitness and nutrition advice. Be encouraging and supportive. Keep responses concise and actionable.
+      return '''You are a friendly and knowledgeable fitness assistant. Provide helpful, evidence-based fitness and nutrition advice. Be encouraging and supportive.
+
+$responseStyle
 
 Important: Always add this disclaimer at the end of health advice: "Note: This is general guidance, not medical advice. Consult a healthcare professional for personalized recommendations."''';
     }
@@ -84,12 +101,13 @@ User Profile:
 - Daily step goal: $goal, Today's steps: $steps
 - Activity level: $activityLevel
 
+$responseStyle
+
 Guidelines:
 - Be encouraging and supportive
 - Provide specific, actionable advice
 - Reference the user's data when relevant (e.g., "Based on your BMI of $bmi...")
 - For food images, estimate calories and macros
-- Keep responses concise and easy to understand
 - Be conversational and friendly
 
 Important: Always add this disclaimer at the end of health advice: "Note: This is general guidance, not medical advice. Consult a healthcare professional for personalized recommendations."''';

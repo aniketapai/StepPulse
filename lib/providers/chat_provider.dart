@@ -54,7 +54,11 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 
   /// Send a message to the AI
-  Future<void> sendMessage(String text, {List<File>? images}) async {
+  Future<void> sendMessage(
+    String text, {
+    List<File>? images,
+    bool isDetailed = false,
+  }) async {
     if (text.trim().isEmpty && (images == null || images.isEmpty)) return;
 
     // Add user message
@@ -81,6 +85,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
         prompt: text,
         images: images,
         userContext: userContext,
+        isDetailed: isDetailed,
       );
 
       // Add AI message
