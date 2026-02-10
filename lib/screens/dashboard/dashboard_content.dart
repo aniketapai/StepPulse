@@ -70,28 +70,45 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     const accentColor = AppTheme.accentBlack;
     const ringBgColor = AppTheme.mintBackground;
 
+    // Get screen dimensions for responsive sizing
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate responsive values
+    final horizontalPadding = screenWidth * 0.05; // 5% of screen width
+    final topSpacing = screenHeight * 0.02; // 2% of screen height
+    final cardSpacing = screenHeight * 0.025; // 2.5% of screen height
+    final cardPadding = screenWidth * 0.06; // 6% of screen width
+
+    // Responsive ring size - scales with screen size but constrained
+    final ringSize = (screenWidth * 0.5).clamp(180.0, 240.0);
+    final ringStrokeWidth = (ringSize * 0.05).clamp(10.0, 14.0);
+
+    // Responsive spacing inside main card
+    final cardInnerSpacing = (screenHeight * 0.03).clamp(20.0, 32.0);
+
     return SafeArea(
       child: stepState.isLoading
           ? Center(child: CircularProgressIndicator(color: accentColor))
           : SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: Column(
                   children: [
-                    const SizedBox(height: 16),
+                    SizedBox(height: topSpacing),
 
                     // Header Row - same layout
                     _buildAnimatedChild(0, _buildHeader(context)),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: cardSpacing),
 
                     // Main Card with Progress Ring
                     _buildAnimatedChild(
                       1,
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(32),
+                        padding: EdgeInsets.all(cardPadding),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24),
@@ -111,13 +128,13 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                                 color: AppTheme.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            SizedBox(height: cardInnerSpacing * 0.75),
                             ProgressRing(
                               progress: stepState.getProgress(
                                 settings.dailyGoal,
                               ),
-                              size: 220,
-                              strokeWidth: 12,
+                              size: ringSize,
+                              strokeWidth: ringStrokeWidth,
                               backgroundColor: ringBgColor,
                               progressColor: accentColor,
                               child: StepCounterDisplay(
@@ -125,7 +142,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                                 goal: settings.dailyGoal,
                               ),
                             ),
-                            const SizedBox(height: 32),
+                            SizedBox(height: cardInnerSpacing),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20,
@@ -158,7 +175,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: cardSpacing * 0.8),
 
                     // Stats Cards Row
                     _buildAnimatedChild(
@@ -190,7 +207,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    SizedBox(height: cardSpacing * 0.5),
 
                     // Active Time - full width since we removed Remaining
                     _buildAnimatedChild(
@@ -227,8 +244,10 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const FitnessChatScreen(),
+              PageRouteBuilder(
+                pageBuilder: (context, _, __) => const FitnessChatScreen(),
+                transitionDuration: Duration.zero,
+                reverseTransitionDuration: Duration.zero,
               ),
             );
           },

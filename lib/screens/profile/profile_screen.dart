@@ -24,15 +24,10 @@ class ProfileContent extends ConsumerStatefulWidget {
   ConsumerState<ProfileContent> createState() => _ProfileContentState();
 }
 
-class _ProfileContentState extends ConsumerState<ProfileContent>
-    with TickerProviderStateMixin {
+class _ProfileContentState extends ConsumerState<ProfileContent> {
   final _nameController = TextEditingController();
   bool _isEditingName = false;
   bool _badgesExpanded = false;
-
-  // Animation controllers
-  late AnimationController _animController;
-  late List<Animation<double>> _fadeAnimations;
 
   @override
   void initState() {
@@ -41,40 +36,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
       final storage = ref.read(storageServiceProvider);
       _nameController.text = storage.profileName;
     });
-
-    // Set up staggered animations for 5 elements
-    _animController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _fadeAnimations = List.generate(5, (index) {
-      final start = index * 0.12;
-      final end = start + 0.4;
-      return Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-          parent: _animController,
-          curve: Interval(
-            start.clamp(0.0, 1.0),
-            end.clamp(0.0, 1.0),
-            curve: Curves.easeOut,
-          ),
-        ),
-      );
-    });
-
-    _animController.forward();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _animController.dispose();
     super.dispose();
-  }
-
-  Widget _buildAnimatedChild(int index, Widget child) {
-    return FadeTransition(opacity: _fadeAnimations[index], child: child);
   }
 
   @override
@@ -104,215 +71,209 @@ class _ProfileContentState extends ConsumerState<ProfileContent>
             const SizedBox(height: 20),
 
             // Title with Settings icon - animated
-            _buildAnimatedChild(
-              0,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Bot Button
-                  GestureDetector(
-                    onTap: _showWeeklyReport,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          const Icon(
-                            Icons.smart_toy_rounded,
-                            size: 24,
-                            color: AppTheme.accentBlack,
-                          ),
-                          // Notification dot (Always visible & glowing)
-                          Positioned(
-                            top: 10,
-                            right: 10,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.redAccent.withValues(
-                                      alpha: 0.6,
-                                    ),
-                                    blurRadius: 6,
-                                    spreadRadius: 2,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Bot Button
+                GestureDetector(
+                  onTap: _showWeeklyReport,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Icon(
+                          Icons.smart_toy_rounded,
+                          size: 24,
+                          color: AppTheme.accentBlack,
+                        ),
+                        // Notification dot (Always visible & glowing)
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.redAccent.withValues(
+                                    alpha: 0.6,
                                   ),
-                                ],
-                              ),
+                                  blurRadius: 6,
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(
-                    child: Text(
-                      'Profile',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: AppTheme.textPrimary,
-                      ),
+                ),
+                Expanded(
+                  child: Text(
+                    'Profile',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: AppTheme.textPrimary,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/settings'),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.settings_rounded,
-                        size: 20,
-                        color: AppTheme.textPrimary,
-                      ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, '/settings'),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.settings_rounded,
+                      size: 20,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),
 
             // Profile Card with Avatar and Name - animated
-            _buildAnimatedChild(
-              1,
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: AppTheme.cardDecoration,
-                child: Column(
-                  children: [
-                    // Avatar
-                    GestureDetector(
-                      onTap: isGoogleUser ? null : _pickProfilePhoto,
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              color: accentColor,
-                              shape: BoxShape.circle,
-                              image: storage.profilePhotoPath != null
-                                  ? DecorationImage(
-                                      image: FileImage(
-                                        File(storage.profilePhotoPath!),
-                                      ),
-                                      fit: BoxFit.cover,
-                                    )
-                                  : null,
-                            ),
-                            child: storage.profilePhotoPath == null
-                                ? const Icon(
-                                    Icons.person_rounded,
-                                    color: Colors.white,
-                                    size: 50,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: AppTheme.cardDecoration,
+              child: Column(
+                children: [
+                  // Avatar
+                  GestureDetector(
+                    onTap: isGoogleUser ? null : _pickProfilePhoto,
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: accentColor,
+                            shape: BoxShape.circle,
+                            image: storage.profilePhotoPath != null
+                                ? DecorationImage(
+                                    image: FileImage(
+                                      File(storage.profilePhotoPath!),
+                                    ),
+                                    fit: BoxFit.cover,
                                   )
                                 : null,
                           ),
-                          if (!isGoogleUser)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.accentBlack,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
+                          child: storage.profilePhotoPath == null
+                              ? const Icon(
+                                  Icons.person_rounded,
                                   color: Colors.white,
-                                  size: 14,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Editable Name
-                    _isEditingName
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 150,
-                                child: TextField(
-                                  controller: _nameController,
-                                  textAlign: TextAlign.center,
-                                  autofocus: true,
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  onSubmitted: (_) => _saveName(),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.check_rounded),
+                                  size: 50,
+                                )
+                              : null,
+                        ),
+                        if (!isGoogleUser)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
                                 color: AppTheme.accentBlack,
-                                onPressed: _saveName,
-                              ),
-                            ],
-                          )
-                        : GestureDetector(
-                            onTap: isGoogleUser
-                                ? null
-                                : () => setState(() => _isEditingName = true),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  storage.profileName,
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    color: AppTheme.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
                                 ),
-                                if (!isGoogleUser) ...[
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    Icons.edit_rounded,
-                                    size: 16,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ],
-                              ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 14,
+                              ),
                             ),
                           ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Member for $memberDays days',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 16),
 
-                    // Achievement Badges Section
-                    const SizedBox(height: 16),
-                    _buildBadgesSection(context, theme, xp, storage),
-                  ],
-                ),
+                  // Editable Name
+                  _isEditingName
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 150,
+                              child: TextField(
+                                controller: _nameController,
+                                textAlign: TextAlign.center,
+                                autofocus: true,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: AppTheme.textPrimary,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                                onSubmitted: (_) => _saveName(),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.check_rounded),
+                              color: AppTheme.accentBlack,
+                              onPressed: _saveName,
+                            ),
+                          ],
+                        )
+                      : GestureDetector(
+                          onTap: isGoogleUser
+                              ? null
+                              : () => setState(() => _isEditingName = true),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                storage.profileName,
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (!isGoogleUser) ...[
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.edit_rounded,
+                                  size: 16,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Member for $memberDays days',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+
+                  // Achievement Badges Section
+                  const SizedBox(height: 16),
+                  _buildBadgesSection(context, theme, xp, storage),
+                ],
               ),
             ),
 

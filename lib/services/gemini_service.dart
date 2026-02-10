@@ -3,13 +3,16 @@ library;
 
 import 'dart:io';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import '../config/api_keys.dart';
 
 class GeminiService {
   late final GenerativeModel _model;
-  static const String _apiKey = 'AIzaSyDL-UQ4Yl0mvEM-k78wk0u_TPm9aW8ghOk';
 
   GeminiService() {
-    _model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: _apiKey);
+    _model = GenerativeModel(
+      model: 'gemini-2.5-flash',
+      apiKey: ApiKeys.geminiApiKey,
+    );
   }
 
   /// Send a message to Gemini with optional images and user context

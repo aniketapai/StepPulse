@@ -114,9 +114,28 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
     const navColor = AppTheme.accentBlack;
     const accentColor = AppTheme.mintBackground;
 
+    // Get screen width for responsive sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive margins - scale with screen width
+    // Smaller on narrow screens, larger on wider screens
+    final horizontalMargin = (screenWidth * 0.04).clamp(12.0, 20.0);
+    final verticalMargin = (screenWidth * 0.035).clamp(14.0, 20.0);
+
+    // Responsive internal padding
+    final navHorizontalPadding = (screenWidth * 0.015).clamp(6.0, 10.0);
+
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      margin: EdgeInsets.fromLTRB(
+        horizontalMargin,
+        verticalMargin,
+        horizontalMargin,
+        verticalMargin,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: navHorizontalPadding,
+        vertical: 12,
+      ),
       decoration: BoxDecoration(
         color: navColor,
         borderRadius: BorderRadius.circular(24),

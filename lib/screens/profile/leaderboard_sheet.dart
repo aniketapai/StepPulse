@@ -203,11 +203,14 @@ class _LeaderboardBottomSheetState
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => UserProfileScreen(
-                                userId: entry.userId,
-                                displayName: entry.displayName,
-                              ),
+                            PageRouteBuilder(
+                              pageBuilder: (context, _, __) =>
+                                  UserProfileScreen(
+                                    userId: entry.userId,
+                                    displayName: entry.displayName,
+                                  ),
+                              transitionDuration: Duration.zero,
+                              reverseTransitionDuration: Duration.zero,
                             ),
                           );
                         },

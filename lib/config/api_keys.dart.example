@@ -1,0 +1,10 @@
+/// API Keys Configuration Template
+/// 
+/// Copy this file to 'api_keys.dart' and fill in your actual API keys.
+/// The 'api_keys.dart' file is gitignored to protect your sensitive keys.
+
+class ApiKeys {
+  // Gemini AI API Key
+  // Get your key from: https://makersuite.google.com/app/apikey
+  static const String geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
+}

@@ -85,10 +85,19 @@ class WalkingService {
     final hasPermission = await checkPermissions();
     if (!hasPermission) return;
 
-    // Configure location settings for walking
-    const locationSettings = LocationSettings(
+    // Configure Android-specific location settings for continuous tracking
+    // even when screen is off
+    final locationSettings = AndroidSettings(
       accuracy: LocationAccuracy.high,
       distanceFilter: 5, // Update every 5 meters
+      intervalDuration: const Duration(
+        seconds: 3,
+      ), // Force updates every 3 seconds
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationText: "StepPulse is tracking your walk",
+        notificationTitle: "Walk in Progress",
+        enableWakeLock: true, // Keep device awake for GPS
+      ),
     );
 
     _positionSubscription =
