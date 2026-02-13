@@ -1136,13 +1136,17 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             // Vertical indicator line from tooltip to selected point
             if (_selectedPointIndex != null &&
                 _selectedPointIndex! < filteredData.length &&
-                _selectedPointIndex! < points.length)
+                _selectedPointIndex! < points.length &&
+                points[_selectedPointIndex!].dy > 50)
               Positioned(
                 left: points[_selectedPointIndex!].dx - 1,
                 top: 50, // Start from below tooltip area
                 child: Container(
                   width: 2,
-                  height: points[_selectedPointIndex!].dy - 50,
+                  height: (points[_selectedPointIndex!].dy - 50).clamp(
+                    0,
+                    double.infinity,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,

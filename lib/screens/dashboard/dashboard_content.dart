@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../providers/step_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../providers/step_xp_bridge_provider.dart';
@@ -8,6 +9,7 @@ import 'widgets/progress_ring.dart';
 import 'widgets/step_counter_display.dart';
 import 'widgets/stat_card.dart';
 import '../fitness_chat_screen.dart';
+import '../profile/weekly_report_dialog.dart';
 
 /// Dashboard content (for use in nav shell - no bottom nav)
 class DashboardContent extends ConsumerStatefulWidget {
@@ -233,13 +235,55 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const SizedBox(width: 48), // Balance for symmetry
+        // Bot / Weekly Report Button
+        GestureDetector(
+          onTap: () => _showWeeklyReport(),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const Icon(
+                  Icons.smart_toy_rounded,
+                  size: 24,
+                  color: AppTheme.accentBlack,
+                ),
+                // Notification dot
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withValues(alpha: 0.6),
+                          blurRadius: 6,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         Text(
           'StepPulse',
           style: Theme.of(
             context,
           ).textTheme.titleLarge?.copyWith(color: AppTheme.textPrimary),
         ),
+        // AI Fitness Assistant Button (to the right of StepPulse)
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -272,6 +316,69 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _showWeeklyReport() async {
+    final storage = ref.read(storageServiceProvider);
+    final settings = ref.read(settingsProvider);
+    final now = DateTime.now();
+
+    final isMonday = now.weekday == DateTime.monday;
+
+    DateTime rangeStart;
+    DateTime rangeEnd;
+
+    if (isMonday) {
+      rangeStart = now.subtract(const Duration(days: 7));
+      rangeEnd = now.subtract(const Duration(days: 1));
+    } else {
+      rangeStart = now.subtract(Duration(days: now.weekday - 1));
+      rangeEnd = now;
+    }
+
+    rangeStart = DateTime(rangeStart.year, rangeStart.month, rangeStart.day);
+    rangeEnd = DateTime(rangeEnd.year, rangeEnd.month, rangeEnd.day);
+
+    final daysToFetch = rangeEnd.difference(rangeStart).inDays + 1;
+    final historyMap = storage.getHistoryMap(days: 30);
+    final weeklyData = <Map<String, dynamic>>[];
+
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    final liveSteps = ref.read(stepProvider).todaySteps;
+
+    for (int i = 0; i < daysToFetch; i++) {
+      final date = rangeStart.add(Duration(days: i));
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+
+      int steps = 0;
+      if (dateStr == todayStr) {
+        steps = liveSteps;
+      } else {
+        steps = historyMap[dateStr] ?? 0;
+      }
+
+      weeklyData.add({
+        'steps': steps,
+        'goal': settings.dailyGoal,
+        'date': dateStr,
+      });
+    }
+
+    if (!mounted) return;
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: Duration.zero,
+      pageBuilder: (context, anim1, anim2) {
+        return WeeklyReportDialog(
+          weeklyData: weeklyData,
+          onDismiss: () => Navigator.pop(context),
+        );
+      },
     );
   }
 

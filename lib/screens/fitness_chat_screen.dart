@@ -21,6 +21,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final List<File> _selectedImages = [];
   bool _isDetailedMode = false; // Toggle for response length
+  int _lastMessageCount = 0; // Track message count for smart auto-scroll
 
   @override
   void dispose() {
@@ -84,12 +85,13 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
     final theme = Theme.of(context);
     final chatState = ref.watch(chatProvider);
 
-    // Auto-scroll when new messages arrive
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (chatState.messages.isNotEmpty) {
+    // Auto-scroll only when a new message arrives (not on every rebuild)
+    if (chatState.messages.length > _lastMessageCount) {
+      _lastMessageCount = chatState.messages.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
-      }
-    });
+      });
+    }
 
     return Theme(
       data: theme.copyWith(
@@ -542,13 +544,27 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                         const SizedBox(height: 12),
                       ],
                       // Message text - selectable for copying with visible selection
-                      SelectionArea(
-                        child: SelectableText(
-                          message.text,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: isUser ? Colors.white : AppTheme.textPrimary,
+                      Theme(
+                        data: isUser
+                            ? theme.copyWith(
+                                textSelectionTheme: TextSelectionThemeData(
+                                  selectionColor: Colors.white.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                  selectionHandleColor: Colors.white70,
+                                ),
+                              )
+                            : theme,
+                        child: SelectionArea(
+                          child: SelectableText(
+                            message.text,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: isUser
+                                  ? Colors.white
+                                  : AppTheme.textPrimary,
+                            ),
+                            selectionControls: MaterialTextSelectionControls(),
                           ),
-                          selectionControls: MaterialTextSelectionControls(),
                         ),
                       ),
                     ],

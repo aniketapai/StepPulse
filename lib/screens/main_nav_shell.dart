@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../core/theme/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../providers/step_provider.dart';
 import '../providers/history_provider.dart';
+import '../providers/friends_provider.dart';
 import '../services/update_service.dart';
+import '../services/firestore_service.dart';
+import '../widgets/friends_sidebar.dart';
 import 'dashboard/dashboard_content.dart';
 import 'stats/stats_screen.dart';
 import 'progress/progress_content.dart';
@@ -39,8 +43,9 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
     // Check for day change immediately on mount
     _checkForDayChange();
 
-    // Check for app updates from GitHub
+    // Ensure user has a friend code (for new and existing users)
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureFriendCode();
       UpdateService.checkForUpdate(context);
     });
   }
@@ -75,6 +80,7 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
   Widget build(BuildContext context) {
     // Watch settings for other preferences
     ref.watch(settingsProvider);
+    final showFriendsSidebar = ref.watch(friendsSidebarVisibleProvider);
 
     // Classic theme background
     const backgroundColor = AppTheme.mintBackground;
@@ -86,25 +92,36 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
       ),
-      child: Scaffold(
-        backgroundColor: backgroundColor,
-        // Use IndexedStack to keep all screens mounted - no rebuild on tab switch
-        body: IndexedStack(
-          index: _currentIndex,
-          children: const [
-            DashboardContent(key: ValueKey('dashboard')),
-            StatsContent(key: ValueKey('stats')),
-            ProgressContent(key: ValueKey('progress')),
-            ProfileContent(key: ValueKey('profile')),
-          ],
-        ),
-        bottomNavigationBar: SafeArea(
-          bottom: true,
-          left: false,
-          right: false,
-          top: false,
-          child: _buildBottomNav(),
-        ),
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: backgroundColor,
+            // Use IndexedStack to keep all screens mounted - no rebuild on tab switch
+            body: IndexedStack(
+              index: _currentIndex,
+              children: const [
+                DashboardContent(key: ValueKey('dashboard')),
+                StatsContent(key: ValueKey('stats')),
+                ProgressContent(key: ValueKey('progress')),
+                ProfileContent(key: ValueKey('profile')),
+              ],
+            ),
+            bottomNavigationBar: SafeArea(
+              bottom: true,
+              left: false,
+              right: false,
+              top: false,
+              child: _buildBottomNav(),
+            ),
+          ),
+          // Friends sidebar overlay
+          if (showFriendsSidebar)
+            FriendsSidebar(
+              onClose: () =>
+                  ref.read(friendsSidebarVisibleProvider.notifier).state =
+                      false,
+            ),
+        ],
       ),
     );
   }
@@ -201,6 +218,30 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
   void _switchTab(int index) {
     if (_currentIndex != index) {
       setState(() => _currentIndex = index);
+    }
+  }
+
+  /// Ensure the current user has a friend code
+  Future<void> _ensureFriendCode() async {
+    try {
+      final friendsNotifier = ref.read(friendsProvider.notifier);
+      await friendsNotifier.loadFriendCode();
+
+      // If no friend code, assign one
+      final state = ref.read(friendsProvider);
+      if (state.friendCode == null || state.friendCode!.isEmpty) {
+        final storage = ref.read(storageServiceProvider);
+        final firestoreService = FirestoreService(storage);
+        final user = FirebaseAuth.instance.currentUser;
+
+        if (user != null) {
+          await firestoreService.assignFriendCode(user.uid);
+          // Reload friend code after assignment
+          await friendsNotifier.loadFriendCode();
+        }
+      }
+    } catch (e) {
+      print('⚠️ Error ensuring friend code: $e');
     }
   }
 }

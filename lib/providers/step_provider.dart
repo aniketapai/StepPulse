@@ -7,8 +7,10 @@ import '../core/constants/app_constants.dart';
 import '../services/step_service.dart';
 import '../services/storage_service.dart';
 import '../services/foreground_service.dart';
+import '../services/health_service.dart';
 import 'settings_provider.dart';
 import 'sync_manager.dart';
+import 'xp_provider.dart';
 
 /// State for step tracking
 class StepState {
@@ -81,13 +83,14 @@ class StepNotifier extends StateNotifier<StepState> {
   final StepService _stepService;
   final StorageService _storage;
   final SyncManager? _syncManager;
+  final Ref _ref;
   StreamSubscription<int>? _stepSubscription;
   Timer? _midnightTimer;
 
   // Track milestone saves to prevent duplicate saves
   final Set<int> _savedMilestones = {}; // {25, 50, 75, 100}
 
-  StepNotifier(this._stepService, this._storage, [this._syncManager])
+  StepNotifier(this._stepService, this._storage, this._ref, [this._syncManager])
     : super(const StepState()) {
     _initialize();
   }
@@ -102,11 +105,23 @@ class StepNotifier extends StateNotifier<StepState> {
 
     // Check if it's a new day
     if (savedDate != null && savedDate != today) {
-      // Save yesterday's steps to history
-      final yesterdaySteps = lastRawSteps - savedBaseline;
-      if (yesterdaySteps > 0) {
-        await _storage.saveStepsForDate(savedDate, yesterdaySteps);
+      // Save the last tracked day's steps to history
+      final lastDaySteps = lastRawSteps - savedBaseline;
+      if (lastDaySteps > 0) {
+        await _storage.saveStepsForDate(savedDate, lastDaySteps);
       }
+
+      // Check if multiple days were missed — backfill from Health Connect
+      final savedDateTime = DateTime.tryParse(savedDate);
+      final todayDateTime = DateTime.parse(today);
+      if (savedDateTime != null) {
+        final daysMissed = todayDateTime.difference(savedDateTime).inDays;
+        if (daysMissed > 1) {
+          // Multiple days missed! Try to recover from Health Connect
+          await _backfillMissedDays(savedDateTime, todayDateTime);
+        }
+      }
+
       // Reset baseline for new day
       await _storage.setBaselineSteps(lastRawSteps);
       await _storage.setCurrentDate(today);
@@ -137,6 +152,69 @@ class StepNotifier extends StateNotifier<StepState> {
 
     // Start listening to pedometer sensor
     await _checkAndStartListening();
+  }
+
+  /// Backfill step history and XP for days the app was closed
+  /// Uses Health Connect to fetch historical step data
+  Future<void> _backfillMissedDays(
+    DateTime lastSavedDate,
+    DateTime today,
+  ) async {
+    try {
+      final healthService = HealthService();
+
+      // Check if Health Connect is available and authorized
+      final available = await healthService.initialize();
+      if (!available) {
+        print('⚠️ Health Connect not available for backfill');
+        return;
+      }
+
+      final authorized = await healthService.checkAuthorization();
+      if (!authorized) {
+        print('⚠️ Health Connect not authorized for backfill');
+        return;
+      }
+
+      // Fetch steps for each missed day (day after last saved through yesterday)
+      final startDate = lastSavedDate.add(const Duration(days: 1));
+      final endDate = today.subtract(const Duration(days: 1));
+
+      if (startDate.isAfter(endDate)) return;
+
+      print('📱 Backfilling steps from Health Connect: $startDate to $endDate');
+
+      final missedSteps = await healthService.getStepsForDateRange(
+        startDate,
+        endDate,
+      );
+
+      if (missedSteps.isEmpty) {
+        print('📱 No step data found in Health Connect for missed days');
+        return;
+      }
+
+      // Save each day's steps to local history
+      for (final entry in missedSteps.entries) {
+        await _storage.saveStepsForDate(entry.key, entry.value);
+        print('💾 Recovered ${entry.value} steps for ${entry.key}');
+      }
+
+      // Award XP for the missed days
+      try {
+        final xpNotifier = _ref.read(xpProvider.notifier);
+        final settings = _ref.read(settingsProvider);
+        await xpNotifier.backfillDailyXp(
+          missedDaysSteps: missedSteps,
+          goal: settings.dailyGoal,
+        );
+        print('✅ Backfilled XP for ${missedSteps.length} missed days');
+      } catch (e) {
+        print('⚠️ Error backfilling XP: $e');
+      }
+    } catch (e) {
+      print('⚠️ Error during step backfill: $e');
+    }
   }
 
   /// Check if permission is already granted and start listening
@@ -410,5 +488,5 @@ final stepProvider = StateNotifierProvider<StepNotifier, StepState>((ref) {
     // Sync manager not available (e.g., during initialization)
   }
 
-  return StepNotifier(stepService, storage, syncManager);
+  return StepNotifier(stepService, storage, ref, syncManager);
 });

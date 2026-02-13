@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -9,11 +10,11 @@ import '../../providers/settings_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/sync_manager.dart';
 import '../../providers/step_provider.dart';
+import '../../providers/friends_provider.dart';
 import 'package:intl/intl.dart';
 import '../../models/xp_data.dart';
 import 'weekly_report_dialog.dart';
 import 'leaderboard_sheet.dart';
-import '../fitness_chat_screen.dart';
 import '../../providers/leaderboard_provider.dart';
 
 /// Enhanced Profile screen content (for use in nav shell)
@@ -49,6 +50,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     final xp = ref.watch(xpProvider);
     final storage = ref.watch(storageServiceProvider);
     final settings = ref.watch(settingsProvider);
+    final friendsState = ref.watch(friendsProvider);
     final theme = Theme.of(context);
 
     // Classic theme colors
@@ -74,9 +76,9 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Bot Button
+                // Friends Button
                 GestureDetector(
-                  onTap: _showWeeklyReport,
+                  onTap: () => _openFriendsSidebar(context),
                   child: Container(
                     width: 44,
                     height: 44,
@@ -88,32 +90,37 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       alignment: Alignment.center,
                       children: [
                         const Icon(
-                          Icons.smart_toy_rounded,
+                          Icons.people_rounded,
                           size: 24,
                           color: AppTheme.accentBlack,
                         ),
-                        // Notification dot (Always visible & glowing)
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.redAccent.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                  blurRadius: 6,
-                                  spreadRadius: 2,
+                        // Notification dot for pending requests
+                        if (friendsState.pendingRequestsCount > 0)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF6B6B),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1.5,
                                 ),
-                              ],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFFFF6B6B,
+                                    ).withValues(alpha: 0.6),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -276,7 +283,6 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
 
             // XP & Level Card
@@ -687,37 +693,6 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // AI Assistant Button
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const FitnessChatScreen(),
-                  ),
-                );
-              },
-              child: Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.accentBlack,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
             // Trophy icon
             Icon(
               Icons.emoji_events_rounded,
@@ -798,6 +773,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
       setState(() {});
     }
   }
+
+  /// Build friend code display card
 
   // Badge definitions
   static const List<Map<String, dynamic>> _badgeDefinitions = [
@@ -1274,6 +1251,11 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
         ],
       ),
     );
+  }
+
+  /// Open the friends sidebar via shared provider
+  void _openFriendsSidebar(BuildContext context) {
+    ref.read(friendsSidebarVisibleProvider.notifier).state = true;
   }
 
   Future<void> _showWeeklyReport() async {

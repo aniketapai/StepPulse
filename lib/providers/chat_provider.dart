@@ -8,6 +8,7 @@ import '../services/gemini_service.dart';
 import '../services/storage_service.dart';
 import 'settings_provider.dart';
 import 'step_provider.dart';
+import 'xp_provider.dart';
 
 /// Chat state
 class ChatState {
@@ -140,6 +141,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
         : 2; // default to moderate
     final activityLevel = activityLabels[levelIndex];
 
+    // Get all-time stats from XP provider
+    final xpData = _ref.read(xpProvider);
+
+    // Get recent step history (last 7 days)
+    final history = _storage.getHistory(days: 7);
+    final recentHistory = history
+        .map((d) => '${d.date}: ${d.steps} steps')
+        .join(', ');
+
     return {
       'age': settings.age,
       'gender': settings.gender,
@@ -149,6 +159,15 @@ class ChatNotifier extends StateNotifier<ChatState> {
       'goal': settings.dailyGoal,
       'steps': steps,
       'activityLevel': activityLevel,
+      // All-time records
+      'totalXp': xpData.totalXp,
+      'level': xpData.level,
+      'levelTitle': xpData.levelTitle,
+      'currentStreak': xpData.currentStreak,
+      'longestStreak': xpData.longestStreak,
+      'totalStepsAllTime': xpData.totalStepsAllTime,
+      'totalDaysActive': xpData.totalDaysActive,
+      'recentHistory': recentHistory,
     };
   }
 }

@@ -281,11 +281,86 @@ class XpNotifier extends StateNotifier<XpData> {
     if (!state.streakFreezeActive) return false;
     if (state.streakFreezeDate == null) return false;
 
-    // Freeze protects the date it was set to (yesterday when activated)
-    final freezeDate = state.streakFreezeDate!;
-    return date.year == freezeDate.year &&
-        date.month == freezeDate.month &&
-        date.day == freezeDate.day;
+    // Check if the freeze date matches
+    return state.streakFreezeDate!.year == date.year &&
+        state.streakFreezeDate!.month == date.month &&
+        state.streakFreezeDate!.day == date.day;
+  }
+
+  /// Backfill XP for missed days when app was closed
+  /// Takes a map of date string -> steps for each missed day (in chronological order)
+  Future<void> backfillDailyXp({
+    required Map<String, int> missedDaysSteps,
+    required int goal,
+  }) async {
+    if (missedDaysSteps.isEmpty) return;
+
+    // Sort dates chronologically
+    final sortedDates = missedDaysSteps.keys.toList()..sort();
+
+    int currentStreak = state.currentStreak;
+    int longestStreak = state.longestStreak;
+    int totalStepsAllTime = state.totalStepsAllTime;
+    int totalDaysActive = state.totalDaysActive;
+    int totalXp = state.totalXp;
+    DateTime? lastActiveDate = state.lastActiveDate;
+
+    for (final dateStr in sortedDates) {
+      final steps = missedDaysSteps[dateStr]!;
+      if (steps <= 0) continue;
+
+      final date = DateTime.parse(dateStr);
+
+      // Calculate streak
+      if (lastActiveDate != null) {
+        final daysDiff = date.difference(lastActiveDate).inDays;
+        if (daysDiff == 1) {
+          currentStreak += 1;
+        } else if (daysDiff > 1) {
+          currentStreak = 1; // Streak broken
+        }
+        // daysDiff == 0 means same day, skip streak update
+      } else {
+        currentStreak = 1;
+      }
+
+      if (currentStreak > longestStreak) {
+        longestStreak = currentStreak;
+      }
+
+      // Award step XP
+      final stepXp = (steps * kXpPerStep).floor();
+      totalXp += stepXp;
+
+      // Award goal bonus if applicable
+      if (steps >= goal) {
+        totalXp += kGoalBonusXp;
+      }
+
+      // Award streak bonus
+      totalXp += currentStreak * kStreakBonusXpPerDay;
+
+      totalStepsAllTime += steps;
+      totalDaysActive += 1;
+      lastActiveDate = date;
+
+      print(
+        '📊 Backfilled XP for $dateStr: $steps steps, streak: $currentStreak',
+      );
+    }
+
+    // Update state with all accumulated changes
+    state = state.copyWith(
+      totalXp: totalXp,
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      totalStepsAllTime: totalStepsAllTime,
+      totalDaysActive: totalDaysActive,
+      lastActiveDate: lastActiveDate,
+    );
+
+    // Persist
+    await _storage.saveXpData(state.toMap());
   }
 
   /// Reset all XP progress

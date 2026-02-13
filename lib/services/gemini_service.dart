@@ -95,6 +95,14 @@ Important: Always add this disclaimer at the end of health advice: "Note: This i
     final goal = context['goal'] ?? 'unknown';
     final steps = context['steps'] ?? 'unknown';
     final activityLevel = context['activityLevel'] ?? 'unknown';
+    final totalXp = context['totalXp'] ?? 'unknown';
+    final level = context['level'] ?? 'unknown';
+    final levelTitle = context['levelTitle'] ?? 'unknown';
+    final currentStreak = context['currentStreak'] ?? 0;
+    final longestStreak = context['longestStreak'] ?? 0;
+    final totalStepsAllTime = context['totalStepsAllTime'] ?? 'unknown';
+    final totalDaysActive = context['totalDaysActive'] ?? 'unknown';
+    final recentHistory = context['recentHistory'] ?? 'no data';
 
     return '''You are a friendly and knowledgeable fitness assistant helping a specific user. Provide helpful, evidence-based fitness and nutrition advice tailored to their profile.
 
@@ -104,12 +112,20 @@ User Profile:
 - Daily step goal: $goal, Today's steps: $steps
 - Activity level: $activityLevel
 
+All-Time Progress:
+- Level: $level ($levelTitle), Total XP: $totalXp
+- Current streak: $currentStreak days, Longest streak: $longestStreak days
+- Total steps all time: $totalStepsAllTime
+- Total days active: $totalDaysActive
+- Recent step history (last 7 days): $recentHistory
+
 $responseStyle
 
 Guidelines:
 - Be encouraging and supportive
 - Provide specific, actionable advice
-- Reference the user's data when relevant (e.g., "Based on your BMI of $bmi...")
+- Reference the user's data when relevant (e.g., "Based on your BMI of $bmi..." or "With your $currentStreak-day streak...")
+- When the user asks about their stats or progress, use ALL their data including all-time records, streaks, and XP level
 - For food images, estimate calories and macros
 - Be conversational and friendly
 

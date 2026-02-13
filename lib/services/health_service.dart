@@ -129,4 +129,61 @@ class HealthService {
     _lastFetchTime = null;
     return getTodaySteps();
   }
+
+  /// Get steps for a specific date from Health Connect
+  Future<int?> getStepsForDate(DateTime date) async {
+    if (!_isAvailable || !_isAuthorized) return null;
+
+    try {
+      final start = DateTime(date.year, date.month, date.day);
+      final end = DateTime(date.year, date.month, date.day, 23, 59, 59);
+      final steps = await _health.getTotalStepsInInterval(start, end);
+      return steps;
+    } catch (e) {
+      print('Error fetching steps for ${date.toIso8601String()}: $e');
+      return null;
+    }
+  }
+
+  /// Get steps for a date range from Health Connect
+  /// Returns a map of date string (yyyy-MM-dd) -> step count
+  Future<Map<String, int>> getStepsForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    if (!_isAvailable || !_isAuthorized) return {};
+
+    final result = <String, int>{};
+
+    try {
+      // Query each day individually for accuracy
+      var current = DateTime(startDate.year, startDate.month, startDate.day);
+      final end = DateTime(endDate.year, endDate.month, endDate.day);
+
+      while (!current.isAfter(end)) {
+        final dayStart = current;
+        final dayEnd = DateTime(
+          current.year,
+          current.month,
+          current.day,
+          23,
+          59,
+          59,
+        );
+
+        final steps = await _health.getTotalStepsInInterval(dayStart, dayEnd);
+        if (steps != null && steps > 0) {
+          final dateStr =
+              '${current.year}-${current.month.toString().padLeft(2, '0')}-${current.day.toString().padLeft(2, '0')}';
+          result[dateStr] = steps;
+        }
+
+        current = current.add(const Duration(days: 1));
+      }
+    } catch (e) {
+      print('Error fetching steps for date range: $e');
+    }
+
+    return result;
+  }
 }
