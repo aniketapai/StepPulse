@@ -34,8 +34,8 @@ class _LeaderboardBottomSheetState
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -51,7 +51,7 @@ class _LeaderboardBottomSheetState
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppTheme.textPrimaryC(context).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -65,7 +65,7 @@ class _LeaderboardBottomSheetState
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
+                    color: Colors.amber.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -83,14 +83,14 @@ class _LeaderboardBottomSheetState
                         'Global Leaderboard',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                       if (leaderboard.totalUsers > 0)
                         Text(
                           '${leaderboard.totalUsers} walkers',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                     ],
@@ -109,12 +109,12 @@ class _LeaderboardBottomSheetState
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         )
                       : Icon(
                           Icons.refresh_rounded,
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                 ),
               ],
@@ -128,7 +128,9 @@ class _LeaderboardBottomSheetState
               child: Text(
                 'Updated ${_formatLastFetched(leaderboard.lastFetched!)}',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                  color: AppTheme.textSecondaryC(
+                    context,
+                  ).withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -136,7 +138,10 @@ class _LeaderboardBottomSheetState
           const SizedBox(height: 12),
 
           // Divider
-          Divider(height: 1, color: Colors.grey.shade200),
+          Divider(
+            height: 1,
+            color: AppTheme.textPrimaryC(context).withValues(alpha: 0.1),
+          ),
 
           // Leaderboard list
           Flexible(
@@ -157,13 +162,13 @@ class _LeaderboardBottomSheetState
                           Icon(
                             Icons.cloud_off_rounded,
                             size: 48,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'Unable to load leaderboard',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -180,13 +185,13 @@ class _LeaderboardBottomSheetState
                           Icon(
                             Icons.people_outline_rounded,
                             size: 48,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             'No walkers yet',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -259,13 +264,13 @@ class _LeaderboardTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: entry.isCurrentUser
-            ? AppTheme.mintBackground
+            ? AppTheme.bg(context)
             : isTopThree
             ? _getRankColor(entry.rank).withValues(alpha: 0.1)
-            : Colors.grey.shade50,
+            : AppTheme.subtleBg(context),
         borderRadius: BorderRadius.circular(12),
         border: entry.isCurrentUser
-            ? Border.all(color: AppTheme.accentBlack, width: 2)
+            ? Border.all(color: AppTheme.accent(context), width: 2)
             : null,
       ),
       child: Row(
@@ -277,7 +282,7 @@ class _LeaderboardTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: isTopThree
                   ? _getRankColor(entry.rank)
-                  : Colors.grey.shade200,
+                  : AppTheme.subtleBg(context),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -291,7 +296,7 @@ class _LeaderboardTile extends StatelessWidget {
                       '${entry.rank}',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
             ),
@@ -313,7 +318,7 @@ class _LeaderboardTile extends StatelessWidget {
                           fontWeight: entry.isCurrentUser
                               ? FontWeight.w700
                               : FontWeight.w500,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -326,14 +331,14 @@ class _LeaderboardTile extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'YOU',
                           style: theme.textTheme.labelSmall?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: AppTheme.bgDark,
                             fontSize: 9,
                           ),
                         ),
@@ -344,7 +349,7 @@ class _LeaderboardTile extends StatelessWidget {
                 Text(
                   'Level ${entry.level} • ${entry.levelTitle}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -359,13 +364,13 @@ class _LeaderboardTile extends StatelessWidget {
                 _formatXp(entry.totalXp),
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               Text(
                 'XP',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
             ],

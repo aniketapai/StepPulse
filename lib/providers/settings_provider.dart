@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/constants/app_constants.dart';
 import '../services/storage_service.dart';
@@ -56,6 +57,7 @@ class SettingsState {
   final String gender; // 'male' or 'female'
   final ActivityLevel activityLevel;
   final DashboardTheme dashboardTheme;
+  final ThemeMode themeMode;
 
   const SettingsState({
     this.dailyGoal = kDefaultDailyGoal,
@@ -66,6 +68,7 @@ class SettingsState {
     this.gender = 'male',
     this.activityLevel = ActivityLevel.moderate,
     this.dashboardTheme = DashboardTheme.classic,
+    this.themeMode = ThemeMode.system,
   });
 
   SettingsState copyWith({
@@ -77,6 +80,7 @@ class SettingsState {
     String? gender,
     ActivityLevel? activityLevel,
     DashboardTheme? dashboardTheme,
+    ThemeMode? themeMode,
   }) {
     return SettingsState(
       dailyGoal: dailyGoal ?? this.dailyGoal,
@@ -87,6 +91,7 @@ class SettingsState {
       gender: gender ?? this.gender,
       activityLevel: activityLevel ?? this.activityLevel,
       dashboardTheme: dashboardTheme ?? this.dashboardTheme,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 
@@ -128,6 +133,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       gender: _storage.gender,
       activityLevel: ActivityLevel.values[_storage.activityLevel.clamp(0, 4)],
       dashboardTheme: DashboardTheme.values[_storage.dashboardTheme],
+      themeMode: ThemeMode.values[_storage.darkMode.clamp(0, 2)],
     );
   }
 
@@ -178,6 +184,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setDashboardTheme(DashboardTheme theme) async {
     await _storage.setDashboardTheme(theme.index);
     state = state.copyWith(dashboardTheme: theme);
+  }
+
+  /// Update dark mode (system / light / dark)
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _storage.setDarkMode(mode.index);
+    state = state.copyWith(themeMode: mode);
   }
 
   /// Reset settings to defaults

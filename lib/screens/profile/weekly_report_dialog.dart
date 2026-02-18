@@ -5,11 +5,15 @@ import '../../core/constants/app_constants.dart';
 
 class WeeklyReportDialog extends StatefulWidget {
   final List<Map<String, dynamic>> weeklyData;
+  final Map<String, int> allTimeHistory;
+  final int dailyGoal;
   final VoidCallback onDismiss;
 
   const WeeklyReportDialog({
     super.key,
     required this.weeklyData,
+    required this.allTimeHistory,
+    required this.dailyGoal,
     required this.onDismiss,
   });
 
@@ -64,6 +68,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final stats = _calculateStats();
+    final deepInsights = _computeDeepInsights();
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -71,7 +76,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
       child: Container(
         constraints: const BoxConstraints(maxWidth: 360),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: AppTheme.cardColor(context),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -90,7 +95,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                   if (_showContent) ...[
                     FadeTransition(
                       opacity: _contentAnimation,
-                      child: _buildBotContent(theme, stats),
+                      child: _buildBotContent(theme, stats, deepInsights),
                     ),
                   ],
                 ],
@@ -108,7 +113,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                     child: ElevatedButton(
                       onPressed: widget.onDismiss,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentBlack,
+                        backgroundColor: AppTheme.accent(context),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -141,8 +146,8 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.accentBlack,
-            AppTheme.accentBlack.withValues(alpha: 0.85),
+            AppTheme.accent(context),
+            AppTheme.accent(context).withValues(alpha: 0.85),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -161,15 +166,15 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.mintBackground.withValues(alpha: 0.5),
+                  color: AppTheme.subtleBg(context).withValues(alpha: 0.5),
                   blurRadius: 12,
                   spreadRadius: 2,
                 ),
               ],
             ),
-            child: const Icon(
+            child: Icon(
               Icons.smart_toy_rounded,
-              color: AppTheme.accentBlack,
+              color: AppTheme.accent(context),
               size: 26,
             ),
           ),
@@ -243,7 +248,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.sheetBg(context),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -270,7 +275,9 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                      color: AppTheme.textSecondaryC(
+                        context,
+                      ).withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -283,7 +290,11 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
     );
   }
 
-  Widget _buildBotContent(ThemeData theme, _WeeklyStats stats) {
+  Widget _buildBotContent(
+    ThemeData theme,
+    _WeeklyStats stats,
+    _DeepInsights insights,
+  ) {
     final greeting = _getGreeting();
     final dateRange = _getDateRange();
     final dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -300,14 +311,14 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                 '$greeting 👋',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 "Here's your weekly report for $dateRange:",
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
             ],
@@ -343,7 +354,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                               decoration: BoxDecoration(
                                 color: hitGoal
                                     ? Colors.green.shade400
-                                    : Colors.grey.shade300,
+                                    : AppTheme.grey300(context),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             ),
@@ -355,7 +366,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                                 fontWeight: FontWeight.w600,
                                 color: hitGoal
                                     ? Colors.green.shade600
-                                    : AppTheme.textSecondary,
+                                    : AppTheme.textSecondaryC(context),
                               ),
                             ),
                           ],
@@ -374,7 +385,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                     icon: Icons.directions_walk_rounded,
                     value: _formatNumber(stats.totalSteps),
                     label: 'steps',
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                   ),
                   _buildMiniStat(
                     icon: Icons.flag_rounded,
@@ -403,13 +414,13 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
               if (stats.bestDayIndex >= 0) ...[
                 Row(
                   children: [
-                    const Text('🏆', style: TextStyle(fontSize: 16)),
+                    Text('🏆', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Best day: ${stats.bestDayName} with ${_formatNumber(stats.maxSteps)} steps!',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -427,14 +438,14 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
                         : stats.goalsHit >= 3
                         ? '💪'
                         : '🚶',
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       _getInsight(stats),
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -444,6 +455,10 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
             ],
           ),
         ),
+        const SizedBox(height: 12),
+
+        // Deep Insights bubble
+        _buildDeepInsights(theme, insights),
       ],
     );
   }
@@ -453,7 +468,7 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.sheetBg(context),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -483,12 +498,15 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontSize: 10,
+              color: AppTheme.textSecondaryC(context),
+            ),
           ),
         ],
       ),
@@ -608,6 +626,255 @@ class _WeeklyReportDialogState extends State<WeeklyReportDialog>
     }
     return "Every step counts! Let's aim to hit more goals next week. You've got this! 💪";
   }
+
+  /// Compute deep insights from full history
+  _DeepInsights _computeDeepInsights() {
+    final history = widget.allTimeHistory;
+    final goal = widget.dailyGoal;
+    final now = DateTime.now();
+
+    // --- Week-over-week trend ---
+    final thisWeekTotal = widget.weeklyData.fold<int>(
+      0,
+      (sum, d) => sum + ((d['steps'] as int?) ?? 0),
+    );
+
+    // Get last week's data
+    int lastWeekTotal = 0;
+    final lastWeekStart = now.subtract(Duration(days: now.weekday + 6));
+    for (int i = 0; i < 7; i++) {
+      final date = lastWeekStart.add(Duration(days: i));
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      lastWeekTotal += history[dateStr] ?? 0;
+    }
+
+    double weekOverWeekChange = 0;
+    if (lastWeekTotal > 0) {
+      weekOverWeekChange =
+          ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
+    }
+
+    // --- Best weekday pattern (last 4 weeks) ---
+    final weekdayTotals = List<int>.filled(7, 0);
+    final weekdayCounts = List<int>.filled(7, 0);
+    final fourWeeksAgo = now.subtract(const Duration(days: 28));
+
+    for (final entry in history.entries) {
+      final date = DateTime.tryParse(entry.key);
+      if (date != null && date.isAfter(fourWeeksAgo)) {
+        weekdayTotals[date.weekday - 1] += entry.value;
+        weekdayCounts[date.weekday - 1]++;
+      }
+    }
+
+    int bestWeekdayIndex = 0;
+    double bestWeekdayAvg = 0;
+    final weekdayNames = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    for (int i = 0; i < 7; i++) {
+      final avg = weekdayCounts[i] > 0
+          ? weekdayTotals[i] / weekdayCounts[i]
+          : 0.0;
+      if (avg > bestWeekdayAvg) {
+        bestWeekdayAvg = avg;
+        bestWeekdayIndex = i;
+      }
+    }
+
+    // --- Consistency (last 28 days) ---
+    int daysWithGoal = 0;
+    int totalDaysTracked = 0;
+    for (int i = 0; i < 28; i++) {
+      final date = now.subtract(Duration(days: i));
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
+      final steps = history[dateStr];
+      if (steps != null && steps > 0) {
+        totalDaysTracked++;
+        if (steps >= goal) daysWithGoal++;
+      }
+    }
+    final consistencyPct = totalDaysTracked > 0
+        ? (daysWithGoal / totalDaysTracked * 100).round()
+        : 0;
+
+    // --- PR detection this week ---
+    int allTimeMax = 0;
+    for (final steps in history.values) {
+      if (steps > allTimeMax) allTimeMax = steps;
+    }
+    String? prDay;
+    for (final day in widget.weeklyData) {
+      final steps = day['steps'] as int? ?? 0;
+      if (steps >= allTimeMax && steps > 0) {
+        final dateStr = day['date'] as String?;
+        if (dateStr != null) {
+          final date = DateTime.tryParse(dateStr);
+          if (date != null) {
+            prDay = weekdayNames[date.weekday - 1];
+          }
+        }
+        break;
+      }
+    }
+
+    // --- Weekday vs Weekend average ---
+    int weekdaySteps = 0, weekdayDays = 0;
+    int weekendSteps = 0, weekendDays = 0;
+    for (final entry in history.entries) {
+      final date = DateTime.tryParse(entry.key);
+      if (date != null && date.isAfter(fourWeeksAgo) && entry.value > 0) {
+        if (date.weekday >= 6) {
+          weekendSteps += entry.value;
+          weekendDays++;
+        } else {
+          weekdaySteps += entry.value;
+          weekdayDays++;
+        }
+      }
+    }
+    final weekdayAvg = weekdayDays > 0 ? weekdaySteps ~/ weekdayDays : 0;
+    final weekendAvg = weekendDays > 0 ? weekendSteps ~/ weekendDays : 0;
+
+    return _DeepInsights(
+      weekOverWeekChange: weekOverWeekChange,
+      lastWeekTotal: lastWeekTotal,
+      bestWeekday: weekdayNames[bestWeekdayIndex],
+      bestWeekdayAvg: bestWeekdayAvg.round(),
+      consistencyPct: consistencyPct,
+      prDay: prDay,
+      weekdayAvg: weekdayAvg,
+      weekendAvg: weekendAvg,
+    );
+  }
+
+  /// Build the deep insights chat bubble
+  Widget _buildDeepInsights(ThemeData theme, _DeepInsights insights) {
+    final insightRows = <Widget>[];
+
+    // Week-over-week trend
+    if (insights.lastWeekTotal > 0) {
+      final isUp = insights.weekOverWeekChange >= 0;
+      final changeStr =
+          '${insights.weekOverWeekChange.abs().toStringAsFixed(0)}%';
+      insightRows.add(
+        _buildInsightRow(
+          theme,
+          emoji: isUp ? '📈' : '📉',
+          text: isUp
+              ? 'You walked $changeStr more than last week — keep it up!'
+              : 'You walked $changeStr less than last week. Let\'s bounce back!',
+        ),
+      );
+    }
+
+    // PR this week
+    if (insights.prDay != null) {
+      insightRows.add(
+        _buildInsightRow(
+          theme,
+          emoji: '🏆',
+          text:
+              'New personal best this ${insights.prDay}! You\'re unstoppable!',
+        ),
+      );
+    }
+
+    // Consistency
+    insightRows.add(
+      _buildInsightRow(
+        theme,
+        emoji: insights.consistencyPct >= 70 ? '🎯' : '📊',
+        text:
+            'Monthly consistency: ${insights.consistencyPct}% of days you hit your goal.',
+      ),
+    );
+
+    // Best weekday
+    insightRows.add(
+      _buildInsightRow(
+        theme,
+        emoji: '⭐',
+        text:
+            'Your strongest day is ${insights.bestWeekday} (avg ${_formatNumber(insights.bestWeekdayAvg)} steps).',
+      ),
+    );
+
+    // Weekday vs Weekend
+    if (insights.weekdayAvg > 0 && insights.weekendAvg > 0) {
+      final moreActive = insights.weekdayAvg > insights.weekendAvg
+          ? 'weekdays'
+          : 'weekends';
+      insightRows.add(
+        _buildInsightRow(
+          theme,
+          emoji: '🔄',
+          text:
+              'You\'re more active on $moreActive (${_formatNumber(insights.weekdayAvg)} vs ${_formatNumber(insights.weekendAvg)} avg).',
+        ),
+      );
+    }
+
+    return _buildChatBubble(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                size: 16,
+                color: const Color(0xFFFFD700),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Deep Insights',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimaryC(context),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...insightRows,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightRow(
+    ThemeData theme, {
+    required String emoji,
+    required String text,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppTheme.textPrimaryC(context),
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _WeeklyStats {
@@ -625,5 +892,27 @@ class _WeeklyStats {
     required this.maxSteps,
     required this.bestDayIndex,
     required this.bestDayName,
+  });
+}
+
+class _DeepInsights {
+  final double weekOverWeekChange;
+  final int lastWeekTotal;
+  final String bestWeekday;
+  final int bestWeekdayAvg;
+  final int consistencyPct;
+  final String? prDay;
+  final int weekdayAvg;
+  final int weekendAvg;
+
+  _DeepInsights({
+    required this.weekOverWeekChange,
+    required this.lastWeekTotal,
+    required this.bestWeekday,
+    required this.bestWeekdayAvg,
+    required this.consistencyPct,
+    required this.prDay,
+    required this.weekdayAvg,
+    required this.weekendAvg,
   });
 }

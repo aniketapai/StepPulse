@@ -78,7 +78,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -107,8 +107,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                         ? IconButton(
                             key: const ValueKey('back'),
                             onPressed: _previousPage,
-                            icon: const Icon(Icons.arrow_back_rounded),
-                            color: AppTheme.textPrimary,
+                            icon: Icon(Icons.arrow_back_rounded),
+                            color: AppTheme.textPrimaryC(context),
                           )
                         : const SizedBox(key: ValueKey('empty'), width: 48),
                   ),
@@ -128,7 +128,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
                             color: isActive
-                                ? AppTheme.accentBlack
+                                ? AppTheme.accent(context)
                                 : Colors.grey.shade300,
                             borderRadius: BorderRadius.circular(2),
                           ),
@@ -185,7 +185,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppTheme.accentBlack,
+              color: AppTheme.accent(context),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -199,7 +199,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Welcome to StepPulse',
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
             textAlign: TextAlign.center,
           ),
@@ -208,7 +208,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Track your steps, earn XP, and achieve your fitness goals with a fun, gamified experience!',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
           const Spacer(),
@@ -231,14 +231,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         children: [
           const SizedBox(height: 40),
 
-          Icon(Icons.flag_rounded, size: 60, color: AppTheme.accentBlack),
+          Icon(Icons.flag_rounded, size: 60, color: AppTheme.accent(context)),
           const SizedBox(height: 24),
 
           Text(
             'Set Your Daily Goal',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -246,7 +246,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Slide to choose your daily step target',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
 
@@ -275,14 +275,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                   ),
                   style: theme.textTheme.displayMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'steps per day',
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -305,10 +305,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     overlayShape: const RoundSliderOverlayShape(
                       overlayRadius: 28,
                     ),
-                    activeTrackColor: AppTheme.accentBlack,
+                    activeTrackColor: AppTheme.accent(context),
                     inactiveTrackColor: Colors.grey.shade200,
-                    thumbColor: AppTheme.accentBlack,
-                    overlayColor: AppTheme.accentBlack.withValues(alpha: 0.2),
+                    thumbColor: AppTheme.accent(context),
+                    overlayColor: AppTheme.accent(context).withValues(alpha: 0.2),
                   ),
                   child: Slider(
                     value: _selectedGoal.toDouble(),
@@ -331,13 +331,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                       Text(
                         '${minGoal ~/ 1000}K',
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                       ),
                       Text(
                         '${maxGoal ~/ 1000}K',
                         style: theme.textTheme.labelMedium?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                       ),
                     ],
@@ -375,7 +375,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           Icon(
             Icons.accessibility_new_rounded,
             size: 60,
-            color: AppTheme.accentBlack,
+            color: AppTheme.accent(context),
           ),
           const SizedBox(height: 24),
 
@@ -383,7 +383,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Body Measurements',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -391,7 +391,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Used to calculate calories burned more accurately',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
 
@@ -430,7 +430,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     Text(
                       'Height',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                     Text(
@@ -438,7 +438,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           ? '${_heightCm.toStringAsFixed(1)} cm'
                           : '${(_heightCm / 2.54).toStringAsFixed(1)} in',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -451,9 +451,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 12,
                     ),
-                    activeTrackColor: AppTheme.accentBlack,
+                    activeTrackColor: AppTheme.accent(context),
                     inactiveTrackColor: Colors.grey.shade200,
-                    thumbColor: AppTheme.accentBlack,
+                    thumbColor: AppTheme.accent(context),
                   ),
                   child: Slider(
                     value: _heightCm,
@@ -484,7 +484,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     Text(
                       'Weight',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                     Text(
@@ -492,7 +492,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           ? '${_weightKg.toStringAsFixed(1)} kg'
                           : '${(_weightKg * 2.205).toStringAsFixed(1)} lbs',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -505,9 +505,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                     thumbShape: const RoundSliderThumbShape(
                       enabledThumbRadius: 12,
                     ),
-                    activeTrackColor: AppTheme.accentBlack,
+                    activeTrackColor: AppTheme.accent(context),
                     inactiveTrackColor: Colors.grey.shade200,
-                    thumbColor: AppTheme.accentBlack,
+                    thumbColor: AppTheme.accent(context),
                   ),
                   child: Slider(
                     value: _weightKg,
@@ -545,13 +545,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.accentBlack : Colors.transparent,
+          color: isSelected ? AppTheme.accent(context) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: isSelected ? Colors.white : AppTheme.textSecondary,
+            color: isSelected ? Colors.white : AppTheme.textSecondaryC(context),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -573,7 +573,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             width: 100,
             height: 100,
             decoration: BoxDecoration(
-              color: _permissionGranted ? Colors.green : AppTheme.accentBlack,
+              color: _permissionGranted ? Colors.green : AppTheme.accent(context),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -588,7 +588,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Enable Step Tracking',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -596,7 +596,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'We need access to your device\'s motion sensors to count your steps accurately.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
 
@@ -646,10 +646,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppTheme.mintBackground,
+              color: AppTheme.subtleBg(context),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: AppTheme.accentBlack, size: 22),
+            child: Icon(icon, color: AppTheme.accent(context), size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -659,13 +659,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 Text(
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 Text(
                   description,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -718,7 +718,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Sign In',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -726,7 +726,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             'Sign in with Google to sync your progress and set up your profile automatically.',
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
 
@@ -781,7 +781,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                   Text(
                     _isSigningIn ? 'Signing in...' : 'Sign in with Google',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: isDark ? Colors.white : AppTheme.textPrimary,
+                      color: isDark ? Colors.white : AppTheme.textPrimaryC(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -894,7 +894,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentBlack,
+          backgroundColor: AppTheme.accent(context),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

@@ -28,7 +28,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
   void initState() {
     super.initState();
     _animController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
 
@@ -69,8 +69,8 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     ref.watch(stepXpBridgeProvider);
 
     // Classic theme colors
-    const accentColor = AppTheme.accentBlack;
-    const ringBgColor = AppTheme.mintBackground;
+    final accentColor = AppTheme.accent(context);
+    final ringBgColor = AppTheme.ringTrack(context);
 
     // Get screen dimensions for responsive sizing
     final screenHeight = MediaQuery.of(context).size.height;
@@ -112,7 +112,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                         width: double.infinity,
                         padding: EdgeInsets.all(cardPadding),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.cardColor(context),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
@@ -127,7 +127,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
                             Text(
                               _getGreeting(),
                               style: theme.textTheme.titleMedium?.copyWith(
-                                color: AppTheme.textSecondary,
+                                color: AppTheme.textSecondaryC(context),
                               ),
                             ),
                             SizedBox(height: cardInnerSpacing * 0.75),
@@ -242,16 +242,16 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Stack(
               alignment: Alignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.smart_toy_rounded,
                   size: 24,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                 ),
                 // Notification dot
                 Positioned(
@@ -279,9 +279,9 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
         ),
         Text(
           'StepPulse',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(color: AppTheme.textPrimary),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppTheme.textPrimaryC(context),
+          ),
         ),
         // AI Fitness Assistant Button (to the right of StepPulse)
         GestureDetector(
@@ -298,7 +298,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.accentBlack,
+              color: AppTheme.accent(context),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -341,7 +341,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
     rangeEnd = DateTime(rangeEnd.year, rangeEnd.month, rangeEnd.day);
 
     final daysToFetch = rangeEnd.difference(rangeStart).inDays + 1;
-    final historyMap = storage.getHistoryMap(days: 30);
+    final historyMap = storage.getHistoryMap(days: 365);
     final weeklyData = <Map<String, dynamic>>[];
 
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
@@ -376,6 +376,8 @@ class _DashboardContentState extends ConsumerState<DashboardContent>
       pageBuilder: (context, anim1, anim2) {
         return WeeklyReportDialog(
           weeklyData: weeklyData,
+          allTimeHistory: historyMap,
+          dailyGoal: settings.dailyGoal,
           onDismiss: () => Navigator.pop(context),
         );
       },

@@ -39,19 +39,19 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       appBar: AppBar(
-        backgroundColor: AppTheme.mintBackground,
+        backgroundColor: AppTheme.subtleBg(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
-          color: AppTheme.textPrimary,
+          icon: Icon(Icons.arrow_back_ios_rounded, size: 20),
+          color: AppTheme.textPrimaryC(context),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Body Stats',
           style: theme.textTheme.titleLarge?.copyWith(
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
         ),
         centerTitle: true,
@@ -92,7 +92,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
   Widget _buildCurrentStatsCard(SettingsState settings, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -101,12 +101,12 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.person_outline_rounded,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   size: 20,
                 ),
               ),
@@ -114,7 +114,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 'Current Stats',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -132,14 +132,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       children: [
                         Icon(
                           Icons.monitor_weight_outlined,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           size: 24,
                         ),
                         const SizedBox(height: 8),
@@ -148,14 +148,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                               ? '${settings.weightKg}'
                               : '${(settings.weightKg * 2.205).round()}',
                           style: theme.textTheme.headlineSmall?.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
                           settings.useMetric ? 'kg' : 'lbs',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -165,13 +165,15 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentBlack.withValues(alpha: 0.1),
+                            color: AppTheme.accent(
+                              context,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Tap to update',
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.accentBlack,
+                              color: AppTheme.accent(context),
                               fontSize: 9,
                             ),
                           ),
@@ -189,14 +191,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
                       children: [
                         Icon(
                           Icons.height_rounded,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           size: 24,
                         ),
                         const SizedBox(height: 8),
@@ -205,14 +207,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                               ? '${settings.heightCm}'
                               : (settings.heightCm / 2.54).toStringAsFixed(1),
                           style: theme.textTheme.headlineSmall?.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
                           settings.useMetric ? 'cm' : 'in',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -222,13 +224,15 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentBlack.withValues(alpha: 0.1),
+                            color: AppTheme.accent(
+                              context,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Tap to update',
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.accentBlack,
+                              color: AppTheme.accent(context),
                               fontSize: 9,
                             ),
                           ),
@@ -244,28 +248,28 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.mintBackground,
+                    color: AppTheme.subtleBg(context),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
                     children: [
                       Icon(
                         Icons.cake_outlined,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                         size: 24,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '${settings.age}',
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         'years',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -306,7 +310,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -315,12 +319,12 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.speed_rounded,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   size: 20,
                 ),
               ),
@@ -328,7 +332,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 'Body Mass Index',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -345,7 +349,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                 bmi.toStringAsFixed(1),
                 style: theme.textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(width: 12),
@@ -423,31 +427,31 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 '15',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
               Text(
                 '18.5',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
               Text(
                 '25',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
               Text(
                 '30',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
               Text(
                 '40',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
             ],
@@ -460,7 +464,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
   Widget _buildTdeeCard(SettingsState settings, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -469,12 +473,12 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.local_fire_department_rounded,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   size: 20,
                 ),
               ),
@@ -485,14 +489,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                   Text(
                     'Daily Calorie Needs',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(
                     'Based on your stats',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ],
@@ -507,7 +511,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 'Gender',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const Spacer(),
@@ -522,7 +526,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 'Age',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const Spacer(),
@@ -535,7 +539,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
           Text(
             'Activity Level',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -547,7 +551,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppTheme.accentBlack,
+              color: AppTheme.accent(context),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -685,7 +689,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
   Widget _buildGenderToggle(SettingsState settings, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.mintBackground,
+        color: AppTheme.subtleBg(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -697,7 +701,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: settings.gender == 'male'
-                    ? AppTheme.accentBlack
+                    ? AppTheme.accent(context)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -708,7 +712,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     size: 18,
                     color: settings.gender == 'male'
                         ? Colors.white
-                        : AppTheme.textSecondary,
+                        : AppTheme.textSecondaryC(context),
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -716,7 +720,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: settings.gender == 'male'
                           ? Colors.white
-                          : AppTheme.textSecondary,
+                          : AppTheme.textSecondaryC(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -731,7 +735,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
                 color: settings.gender == 'female'
-                    ? AppTheme.accentBlack
+                    ? AppTheme.accent(context)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -742,7 +746,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     size: 18,
                     color: settings.gender == 'female'
                         ? Colors.white
-                        : AppTheme.textSecondary,
+                        : AppTheme.textSecondaryC(context),
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -750,7 +754,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: settings.gender == 'female'
                           ? Colors.white
-                          : AppTheme.textSecondary,
+                          : AppTheme.textSecondaryC(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -766,7 +770,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
   Widget _buildAgeSelector(SettingsState settings, ThemeData theme) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.mintBackground,
+        color: AppTheme.subtleBg(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -784,8 +788,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                 Icons.remove_rounded,
                 size: 20,
                 color: settings.age > 15
-                    ? AppTheme.accentBlack
-                    : AppTheme.textSecondary,
+                    ? AppTheme.accent(context)
+                    : AppTheme.textSecondaryC(context),
               ),
             ),
           ),
@@ -794,7 +798,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             child: Text(
               '${settings.age}',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -811,8 +815,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                 Icons.add_rounded,
                 size: 20,
                 color: settings.age < 100
-                    ? AppTheme.accentBlack
-                    : AppTheme.textSecondary,
+                    ? AppTheme.accent(context)
+                    : AppTheme.textSecondaryC(context),
               ),
             ),
           ),
@@ -834,14 +838,16 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppTheme.accentBlack
-                  : AppTheme.mintBackground,
+                  ? AppTheme.accent(context)
+                  : AppTheme.subtleBg(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               level.label,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
+                color: isSelected
+                    ? Colors.white
+                    : AppTheme.textSecondaryC(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -856,7 +862,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -865,12 +871,12 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.trending_up_rounded,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   size: 20,
                 ),
               ),
@@ -882,14 +888,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     Text(
                       'Weight Progress',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       '${weightHistory.length} entries',
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                   ],
@@ -912,22 +918,24 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                         Icon(
                           Icons.show_chart_rounded,
                           size: 48,
-                          color: AppTheme.textSecondary.withValues(alpha: 0.3),
+                          color: AppTheme.textSecondaryC(
+                            context,
+                          ).withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'No weight data yet',
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Update your weight to start tracking',
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppTheme.textSecondary.withValues(
-                              alpha: 0.7,
-                            ),
+                            color: AppTheme.textSecondaryC(
+                              context,
+                            ).withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -944,7 +952,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
     final ranges = ['1W', '1M', '3M', '1Y'];
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.mintBackground,
+        color: AppTheme.subtleBg(context),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -956,13 +964,17 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.accentBlack : Colors.transparent,
+                color: isSelected
+                    ? AppTheme.accent(context)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 range,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: isSelected ? Colors.white : AppTheme.textSecondary,
+                  color: isSelected
+                      ? Colors.white
+                      : AppTheme.textSecondaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1009,7 +1021,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
         child: Text(
           'No data for this period',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppTheme.textSecondary,
+            color: AppTheme.textSecondaryC(context),
           ),
         ),
       );
@@ -1032,7 +1044,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppTheme.accentBlack.withValues(alpha: 0.1),
+                color: AppTheme.accent(context).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -1041,7 +1053,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                       ? weight.toStringAsFixed(1)
                       : (weight * 2.205).toStringAsFixed(1),
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1051,14 +1063,14 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             Text(
               settings.useMetric ? 'kg' : 'lbs',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
               ),
             ),
             const SizedBox(height: 12),
             Text(
               'Add more entries to see your progress chart',
               style: theme.textTheme.labelSmall?.copyWith(
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -1113,6 +1125,9 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                 minWeight: effectiveMin - padding,
                 maxWeight: effectiveMax + padding,
                 selectedIndex: _selectedPointIndex,
+                accentColor: AppTheme.accent(context),
+                lineStartColor: AppTheme.subtleBg(context),
+                lineEndColor: AppTheme.accent(context),
               ),
             ),
             // Touch detection layer
@@ -1152,8 +1167,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppTheme.accentBlack.withValues(alpha: 0.3),
-                        AppTheme.accentBlack.withValues(alpha: 0.8),
+                        AppTheme.accent(context).withValues(alpha: 0.3),
+                        AppTheme.accent(context).withValues(alpha: 0.8),
                       ],
                     ),
                   ),
@@ -1233,7 +1248,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.accentBlack,
+        color: AppTheme.accent(context),
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
@@ -1283,8 +1298,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             20,
             MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppTheme.sheetBg(context),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -1308,7 +1323,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 'Update Height',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1328,9 +1343,9 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
-                      cursorColor: AppTheme.accentBlack,
+                      cursorColor: AppTheme.accent(context),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                       ),
@@ -1350,7 +1365,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                   Text(
                     settings.useMetric ? 'cm' : 'in',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ],
@@ -1360,10 +1375,10 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               // Slider
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: AppTheme.accentBlack,
-                  inactiveTrackColor: AppTheme.mintBackground,
-                  thumbColor: AppTheme.accentBlack,
-                  overlayColor: AppTheme.accentBlack.withValues(alpha: 0.1),
+                  activeTrackColor: AppTheme.accent(context),
+                  inactiveTrackColor: AppTheme.subtleBg(context),
+                  thumbColor: AppTheme.accent(context),
+                  overlayColor: AppTheme.accent(context).withValues(alpha: 0.1),
                 ),
                 child: Slider(
                   value: height.clamp(100, 250),
@@ -1392,7 +1407,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentBlack,
+                    backgroundColor: AppTheme.accent(context),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1444,8 +1459,8 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
             20,
             MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppTheme.sheetBg(context),
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(20),
               topRight: Radius.circular(20),
@@ -1469,7 +1484,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               Text(
                 'Log Weight',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1488,11 +1503,11 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     builder: (context, child) {
                       return Theme(
                         data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: AppTheme.accentBlack,
+                          colorScheme: ColorScheme.light(
+                            primary: AppTheme.accent(context),
                             onPrimary: Colors.white,
                             surface: Colors.white,
-                            onSurface: AppTheme.textPrimary,
+                            onSurface: AppTheme.textPrimaryC(context),
                           ),
                         ),
                         child: child!,
@@ -1509,30 +1524,30 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.mintBackground,
+                    color: AppTheme.subtleBg(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_rounded,
                         size: 18,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         formatDate(selectedDate),
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      const Icon(
+                      Icon(
                         Icons.arrow_drop_down_rounded,
                         size: 20,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                       ),
                     ],
                   ),
@@ -1554,9 +1569,9 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
-                      cursorColor: AppTheme.accentBlack,
+                      cursorColor: AppTheme.accent(context),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                       ),
@@ -1576,7 +1591,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                   Text(
                     settings.useMetric ? 'kg' : 'lbs',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ],
@@ -1586,10 +1601,10 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
               // Slider
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: AppTheme.accentBlack,
-                  inactiveTrackColor: AppTheme.mintBackground,
-                  thumbColor: AppTheme.accentBlack,
-                  overlayColor: AppTheme.accentBlack.withValues(alpha: 0.1),
+                  activeTrackColor: AppTheme.accent(context),
+                  inactiveTrackColor: AppTheme.subtleBg(context),
+                  thumbColor: AppTheme.accent(context),
+                  overlayColor: AppTheme.accent(context).withValues(alpha: 0.1),
                 ),
                 child: Slider(
                   value: weight.clamp(30, 200),
@@ -1629,7 +1644,7 @@ class _BodyStatsScreenState extends ConsumerState<BodyStatsScreen> {
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentBlack,
+                    backgroundColor: AppTheme.accent(context),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1658,12 +1673,18 @@ class _WeightChartPainter extends CustomPainter {
   final double minWeight;
   final double maxWeight;
   final int? selectedIndex;
+  final Color accentColor;
+  final Color lineStartColor;
+  final Color lineEndColor;
 
   _WeightChartPainter({
     required this.data,
     required this.minWeight,
     required this.maxWeight,
     this.selectedIndex,
+    required this.accentColor,
+    required this.lineStartColor,
+    required this.lineEndColor,
   });
 
   @override
@@ -1699,8 +1720,8 @@ class _WeightChartPainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            AppTheme.accentBlack.withValues(alpha: 0.2),
-            AppTheme.accentBlack.withValues(alpha: 0.02),
+            accentColor.withValues(alpha: 0.2),
+            accentColor.withValues(alpha: 0.02),
           ],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
@@ -1719,7 +1740,7 @@ class _WeightChartPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
         ..shader = LinearGradient(
-          colors: [AppTheme.mintBackground, AppTheme.accentBlack],
+          colors: [lineStartColor, lineEndColor],
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
       canvas.drawPath(linePath, linePaint);
@@ -1735,21 +1756,21 @@ class _WeightChartPainter extends CustomPainter {
         canvas.drawCircle(
           points[i],
           12,
-          Paint()..color = AppTheme.accentBlack.withValues(alpha: 0.3),
+          Paint()..color = accentColor.withValues(alpha: 0.3),
         );
-        canvas.drawCircle(points[i], 7, Paint()..color = AppTheme.accentBlack);
+        canvas.drawCircle(points[i], 7, Paint()..color = accentColor);
         canvas.drawCircle(points[i], 4, Paint()..color = Colors.white);
       } else if (isLast && selectedIndex == null) {
         // Highlight last point when no selection
         canvas.drawCircle(
           points[i],
           8,
-          Paint()..color = AppTheme.accentBlack.withValues(alpha: 0.2),
+          Paint()..color = accentColor.withValues(alpha: 0.2),
         );
-        canvas.drawCircle(points[i], 5, Paint()..color = AppTheme.accentBlack);
+        canvas.drawCircle(points[i], 5, Paint()..color = accentColor);
       } else {
         // Regular point
-        canvas.drawCircle(points[i], 5, Paint()..color = AppTheme.accentBlack);
+        canvas.drawCircle(points[i], 5, Paint()..color = accentColor);
         canvas.drawCircle(points[i], 3, Paint()..color = Colors.white);
       }
     }

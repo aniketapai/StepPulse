@@ -34,7 +34,7 @@ class StepCounterDisplay extends StatelessWidget {
               _formatNumber(value),
               style: theme.textTheme.displayLarge?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
                 fontSize: 48,
                 letterSpacing: -1,
               ),
@@ -49,20 +49,20 @@ class StepCounterDisplay extends StatelessWidget {
             Text(
               'steps',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
               ),
             ),
             Container(
               margin: const EdgeInsets.only(left: 8),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: accentBgColor ?? AppTheme.mintBackground,
+                color: accentBgColor ?? AppTheme.bg(context),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 '$percentage%',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: accentColor ?? AppTheme.textSecondary,
+                  color: accentColor ?? AppTheme.textSecondaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),

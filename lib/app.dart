@@ -47,6 +47,8 @@ class _StepPulseAppState extends ConsumerState<StepPulseApp>
   Widget build(BuildContext context) {
     final storage = ref.watch(storageServiceProvider);
 
+    final settings = ref.watch(settingsProvider);
+
     // Determine initial route based on onboarding status
     final initialRoute = storage.isOnboardingComplete
         ? '/dashboard'
@@ -57,7 +59,7 @@ class _StepPulseAppState extends ConsumerState<StepPulseApp>
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: settings.themeMode,
       initialRoute: initialRoute,
       onGenerateRoute: (settings) {
         // Use smooth page transitions for all routes

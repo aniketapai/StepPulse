@@ -111,17 +111,6 @@ class StepNotifier extends StateNotifier<StepState> {
         await _storage.saveStepsForDate(savedDate, lastDaySteps);
       }
 
-      // Check if multiple days were missed — backfill from Health Connect
-      final savedDateTime = DateTime.tryParse(savedDate);
-      final todayDateTime = DateTime.parse(today);
-      if (savedDateTime != null) {
-        final daysMissed = todayDateTime.difference(savedDateTime).inDays;
-        if (daysMissed > 1) {
-          // Multiple days missed! Try to recover from Health Connect
-          await _backfillMissedDays(savedDateTime, todayDateTime);
-        }
-      }
-
       // Reset baseline for new day
       await _storage.setBaselineSteps(lastRawSteps);
       await _storage.setCurrentDate(today);
@@ -132,6 +121,17 @@ class StepNotifier extends StateNotifier<StepState> {
         todaySteps: 0,
         isLoading: false,
       );
+
+      // Check if multiple days were missed — backfill from Health Connect
+      // Run AFTER UI loads (fire-and-forget) so the dashboard appears instantly
+      final savedDateTime = DateTime.tryParse(savedDate);
+      final todayDateTime = DateTime.parse(today);
+      if (savedDateTime != null) {
+        final daysMissed = todayDateTime.difference(savedDateTime).inDays;
+        if (daysMissed > 1) {
+          _backfillMissedDays(savedDateTime, todayDateTime);
+        }
+      }
     } else {
       state = state.copyWith(
         baselineSteps: savedBaseline,
@@ -349,9 +349,9 @@ class StepNotifier extends StateNotifier<StepState> {
         _storage.saveStepsForDate(state.currentDate, steps);
         _savedMilestones.add(milestone);
 
-        // Haptic celebration when goal is reached!
+        // Strong haptic celebration when goal is reached!
         if (milestone == 100) {
-          HapticFeedback.heavyImpact();
+          _celebrateGoalReached();
         }
 
         print(
@@ -459,6 +459,17 @@ class StepNotifier extends StateNotifier<StepState> {
     final rawSteps = state.rawSteps;
     await _storage.setBaselineSteps(rawSteps);
     state = state.copyWith(baselineSteps: rawSteps, todaySteps: 0);
+  }
+
+  /// Strong triple-burst haptic celebration when daily goal is reached
+  void _celebrateGoalReached() async {
+    HapticFeedback.heavyImpact();
+    await Future.delayed(const Duration(milliseconds: 150));
+    HapticFeedback.heavyImpact();
+    await Future.delayed(const Duration(milliseconds: 150));
+    HapticFeedback.heavyImpact();
+    await Future.delayed(const Duration(milliseconds: 200));
+    HapticFeedback.heavyImpact();
   }
 
   @override

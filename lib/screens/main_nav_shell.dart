@@ -83,14 +83,18 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
     final showFriendsSidebar = ref.watch(friendsSidebarVisibleProvider);
 
     // Classic theme background
-    const backgroundColor = AppTheme.mintBackground;
+    final backgroundColor = AppTheme.bg(context);
 
     // Force status bar color to match background
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: backgroundColor,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarIconBrightness: AppTheme.isDark(context)
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: AppTheme.isDark(context)
+            ? Brightness.dark
+            : Brightness.light,
       ),
       child: Stack(
         children: [
@@ -128,8 +132,8 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
 
   Widget _buildBottomNav() {
     // Classic theme colors
-    const navColor = AppTheme.accentBlack;
-    const accentColor = AppTheme.mintBackground;
+    final navColor = AppTheme.navBarBg(context);
+    final accentColor = AppTheme.accent(context);
 
     // Get screen width for responsive sizing
     final screenWidth = MediaQuery.of(context).size.width;
@@ -156,6 +160,18 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
       decoration: BoxDecoration(
         color: navColor,
         borderRadius: BorderRadius.circular(24),
+        border: AppTheme.isDark(context)
+            ? null
+            : Border.all(color: AppTheme.dividerColor(context)),
+        boxShadow: AppTheme.isDark(context)
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -180,12 +196,14 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
               height: 56,
               margin: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.isDark(context)
+                    ? Colors.white
+                    : AppTheme.bgLight,
                 shape: BoxShape.circle,
                 border: Border.all(color: accentColor, width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.3),
+                    color: accentColor.withValues(alpha: 0.2),
                     blurRadius: 12,
                     offset: const Offset(0, 2),
                   ),
@@ -193,7 +211,7 @@ class _MainNavShellState extends ConsumerState<MainNavShell>
               ),
               child: Icon(
                 Icons.directions_walk_rounded,
-                color: navColor,
+                color: accentColor,
                 size: 28,
               ),
             ),
@@ -273,7 +291,9 @@ class _NavItem extends StatelessWidget {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15 * value),
+              color: AppTheme.isDark(context)
+                  ? Colors.white.withValues(alpha: 0.15 * value)
+                  : AppTheme.accentGreen.withValues(alpha: 0.12 * value),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -281,13 +301,23 @@ class _NavItem extends StatelessWidget {
               children: [
                 Transform.scale(
                   scale: 1.0 + (0.1 * value),
-                  child: Icon(icon, color: Colors.white, size: 22),
+                  child: Icon(
+                    icon,
+                    color: AppTheme.isDark(context)
+                        ? Colors.white
+                        : AppTheme.textDark,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   label,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6 + (0.4 * value)),
+                    color: AppTheme.isDark(context)
+                        ? Colors.white.withValues(alpha: 0.6 + (0.4 * value))
+                        : AppTheme.textDark.withValues(
+                            alpha: 0.5 + (0.5 * value),
+                          ),
                     fontSize: 11,
                     fontWeight: value > 0.5 ? FontWeight.w600 : FontWeight.w400,
                   ),

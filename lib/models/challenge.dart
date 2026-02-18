@@ -1,5 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// XP reward for winning a challenge
+const int kChallengeWinXp = 50;
+
+/// XP penalty for solo cancellation (other person rejects cancel)
+const int kChallengeCancelPenalty = 25;
+
 /// Types of challenges available
 enum ChallengeType {
   steps, // Total steps competition
@@ -13,6 +19,8 @@ enum ChallengeStatus {
   active, // In progress
   completed, // Finished with a winner
   declined, // Opponent declined
+  cancelRequested, // One party requested cancellation
+  cancelled, // Both parties agreed to cancel
 }
 
 /// Duration options for challenges
@@ -106,6 +114,8 @@ class Challenge {
   final int creatorProgress;
   final int opponentProgress;
   final String? winnerId;
+  final String? cancelRequestedBy;
+  final int xpReward;
   final DateTime createdAt;
 
   const Challenge({
@@ -121,6 +131,8 @@ class Challenge {
     this.creatorProgress = 0,
     this.opponentProgress = 0,
     this.winnerId,
+    this.cancelRequestedBy,
+    this.xpReward = kChallengeWinXp,
     required this.createdAt,
   });
 
@@ -146,6 +158,8 @@ class Challenge {
       creatorProgress: data['creatorProgress'] as int? ?? 0,
       opponentProgress: data['opponentProgress'] as int? ?? 0,
       winnerId: data['winnerId'] as String?,
+      cancelRequestedBy: data['cancelRequestedBy'] as String?,
+      xpReward: data['xpReward'] as int? ?? kChallengeWinXp,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -164,6 +178,8 @@ class Challenge {
       'creatorProgress': creatorProgress,
       'opponentProgress': opponentProgress,
       'winnerId': winnerId,
+      'cancelRequestedBy': cancelRequestedBy,
+      'xpReward': xpReward,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }

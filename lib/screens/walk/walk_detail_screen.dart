@@ -89,7 +89,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
     final hasRoute = _hasValidRoute();
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: Stack(
         children: [
           // Map or placeholder
@@ -118,10 +118,10 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                   ),
@@ -143,10 +143,10 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.my_location_rounded,
                           size: 20,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                     ),
@@ -185,16 +185,16 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                     children: [
                       Text(
                         dateFormat.format(_walk.startTime),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                       Text(
                         timeFormat.format(_walk.startTime),
                         style: TextStyle(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                           fontSize: 14,
                         ),
                       ),
@@ -234,7 +234,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.mintBackground,
+                        color: AppTheme.subtleBg(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -243,14 +243,14 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                           Icon(
                             Icons.speed_rounded,
                             size: 16,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             'Avg pace: ${_walk.paceMinPerKm.toStringAsFixed(1)} min/km',
                             style: TextStyle(
                               fontSize: 13,
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -271,7 +271,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                                 : Icons.star_outline_rounded,
                             color: index < _walk.rating
                                 ? Colors.amber
-                                : AppTheme.textSecondary.withValues(alpha: 0.3),
+                                : AppTheme.textSecondaryC(context).withValues(alpha: 0.3),
                             size: 22,
                           );
                         }),
@@ -285,7 +285,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.mintBackground,
+                            color: AppTheme.subtleBg(context),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -293,7 +293,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                               Icon(
                                 Icons.edit_outlined,
                                 size: 16,
-                                color: AppTheme.textPrimary,
+                                color: AppTheme.textPrimaryC(context),
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -301,7 +301,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: AppTheme.textPrimary,
+                                  color: AppTheme.textPrimaryC(context),
                                 ),
                               ),
                             ],
@@ -319,7 +319,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
                       _walk.description!,
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -352,7 +352,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
             polylines: [
               Polyline(
                 points: _walk.polylinePoints,
-                color: AppTheme.accentBlack,
+                color: AppTheme.accent(context),
                 strokeWidth: 5,
               ),
             ],
@@ -413,7 +413,7 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
           Icon(
             Icons.map_outlined,
             size: 80,
-            color: AppTheme.textSecondary.withValues(alpha: 0.3),
+            color: AppTheme.textSecondaryC(context).withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -421,14 +421,14 @@ class _WalkDetailScreenState extends State<WalkDetailScreen> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'GPS data was not captured for this walk',
             style: TextStyle(
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              color: AppTheme.textSecondaryC(context).withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 100), // Space for bottom panel
@@ -498,24 +498,24 @@ class _StatChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.mintBackground,
+          color: AppTheme.subtleBg(context),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 18, color: AppTheme.textSecondary),
+            Icon(icon, size: 18, color: AppTheme.textSecondaryC(context)),
             const SizedBox(height: 4),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 11, color: AppTheme.textSecondaryC(context)),
             ),
           ],
         ),
@@ -569,12 +569,12 @@ class _EditWalkSheetState extends State<_EditWalkSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            const Text(
+            Text(
               'Edit Walk',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 24),
@@ -585,7 +585,7 @@ class _EditWalkSheetState extends State<_EditWalkSheet> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -601,7 +601,7 @@ class _EditWalkSheetState extends State<_EditWalkSheet> {
                           : Icons.star_outline_rounded,
                       color: index < _rating
                           ? Colors.amber
-                          : AppTheme.textSecondary,
+                          : AppTheme.textSecondaryC(context),
                       size: 36,
                     ),
                   ),
@@ -616,22 +616,22 @@ class _EditWalkSheetState extends State<_EditWalkSheet> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _descriptionController,
               maxLines: 3,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              cursorColor: AppTheme.accentBlack,
+              style: TextStyle(color: AppTheme.textPrimary),
+              cursorColor: AppTheme.accent(context),
               decoration: InputDecoration(
                 hintText: 'Add a note about your walk...',
                 hintStyle: TextStyle(
-                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  color: AppTheme.textSecondaryC(context).withValues(alpha: 0.6),
                 ),
                 filled: true,
-                fillColor: AppTheme.mintBackground,
+                fillColor: AppTheme.subtleBg(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -656,7 +656,7 @@ class _EditWalkSheetState extends State<_EditWalkSheet> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(

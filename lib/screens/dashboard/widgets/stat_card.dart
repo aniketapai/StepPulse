@@ -21,14 +21,14 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = accentColor ?? AppTheme.accentBlack;
+    final accent = accentColor ?? AppTheme.accent(context);
     final bgColor = accentColor != null
         ? accentColor!.withValues(alpha: 0.1)
-        : AppTheme.mintBackground;
+        : AppTheme.subtleBg(context);
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -46,7 +46,7 @@ class StatCard extends StatelessWidget {
           Text(
             title,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -74,7 +74,7 @@ class StatCard extends StatelessWidget {
                     displayValue,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   );
                 },
@@ -83,7 +83,7 @@ class StatCard extends StatelessWidget {
               Text(
                 unit,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
             ],

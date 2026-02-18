@@ -11,6 +11,20 @@ import '../../core/theme/app_theme.dart';
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
+  /// Compute the set of dates where a new all-time step record was set
+  Set<String> _getPrDates(List<StepData> history) {
+    final prDates = <String>{};
+    int runningMax = 0;
+    // History is newest-first; reverse to scan chronologically
+    for (final item in history.reversed) {
+      if (item.steps > runningMax && item.steps > 0) {
+        runningMax = item.steps;
+        prDates.add(item.date);
+      }
+    }
+    return prDates;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(historyProvider);
@@ -19,9 +33,10 @@ class HistoryScreen extends ConsumerWidget {
 
     // Get last 7 days for chart
     final chartData = history.take(7).toList().reversed.toList();
+    final prDates = _getPrDates(history);
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.bg(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -37,20 +52,20 @@ class HistoryScreen extends ConsumerWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.cardColor(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                   ),
                   Text(
                     'Statistics',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                   const SizedBox(width: 44),
@@ -61,7 +76,7 @@ class HistoryScreen extends ConsumerWidget {
             // Content
             Expanded(
               child: history.isEmpty
-                  ? _buildEmptyState(theme)
+                  ? _buildEmptyState(context, theme)
                   : SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -72,7 +87,7 @@ class HistoryScreen extends ConsumerWidget {
                           if (chartData.isNotEmpty)
                             Container(
                               padding: const EdgeInsets.all(24),
-                              decoration: AppTheme.cardDecoration,
+                              decoration: AppTheme.cardDecorationOf(context),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -84,9 +99,11 @@ class HistoryScreen extends ConsumerWidget {
                                   SizedBox(
                                     height: 180,
                                     child: _buildChart(
+                                      context,
                                       chartData,
                                       settings.dailyGoal,
                                       theme,
+                                      prDates,
                                     ),
                                   ),
                                 ],
@@ -99,7 +116,7 @@ class HistoryScreen extends ConsumerWidget {
                           Text(
                             'Activity Log',
                             style: theme.textTheme.titleMedium?.copyWith(
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -113,6 +130,7 @@ class HistoryScreen extends ConsumerWidget {
                                 entry.value,
                                 settings.dailyGoal,
                                 entry.key == 0,
+                                prDates.contains(entry.value.date),
                               ),
                             );
                           }),
@@ -128,32 +146,32 @@ class HistoryScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  Widget _buildEmptyState(BuildContext context, ThemeData theme) {
     return Center(
       child: Container(
         margin: const EdgeInsets.all(20),
         padding: const EdgeInsets.all(40),
-        decoration: AppTheme.cardDecoration,
+        decoration: AppTheme.cardDecorationOf(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: AppTheme.subtleBg(context),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.bar_chart_rounded,
                 size: 48,
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               'No history yet',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -169,7 +187,13 @@ class HistoryScreen extends ConsumerWidget {
   }
 
   /// Build bar chart for history
-  Widget _buildChart(List<StepData> data, int goal, ThemeData theme) {
+  Widget _buildChart(
+    BuildContext context,
+    List<StepData> data,
+    int goal,
+    ThemeData theme,
+    Set<String> prDates,
+  ) {
     if (data.isEmpty) return const SizedBox.shrink();
 
     final maxSteps = data.fold<int>(
@@ -191,9 +215,11 @@ class HistoryScreen extends ConsumerWidget {
             barRods: [
               BarChartRodData(
                 toY: item.steps.toDouble(),
-                color: isGoalMet
-                    ? AppTheme.accentBlack
-                    : AppTheme.textSecondary,
+                color: prDates.contains(item.date)
+                    ? const Color(0xFFFFD700) // Gold for PR days
+                    : isGoalMet
+                    ? AppTheme.accent(context)
+                    : AppTheme.textSecondaryC(context),
                 width: 24,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(8),
@@ -238,7 +264,7 @@ class HistoryScreen extends ConsumerWidget {
           horizontalInterval: goal.toDouble(),
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppTheme.textSecondary.withValues(alpha: 0.2),
+              color: AppTheme.textSecondaryC(context).withValues(alpha: 0.2),
               strokeWidth: 1,
               dashArray: [5, 5],
             );
@@ -247,7 +273,7 @@ class HistoryScreen extends ConsumerWidget {
         barTouchData: BarTouchData(
           enabled: true,
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => AppTheme.accentBlack,
+            getTooltipColor: (_) => AppTheme.accent(context),
             tooltipRoundedRadius: 8,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               final steps = rod.toY.toInt();
@@ -271,6 +297,7 @@ class HistoryScreen extends ConsumerWidget {
     StepData item,
     int goal,
     bool isToday,
+    bool isPr,
   ) {
     final theme = Theme.of(context);
     final date = DateTime.parse(item.date);
@@ -293,7 +320,7 @@ class HistoryScreen extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Row(
         children: [
           // Date column
@@ -318,7 +345,7 @@ class HistoryScreen extends ConsumerWidget {
               height: 8,
               margin: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: AppTheme.subtleBg(context),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: FractionallySizedBox(
@@ -327,8 +354,8 @@ class HistoryScreen extends ConsumerWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isGoalMet
-                        ? AppTheme.accentBlack
-                        : AppTheme.textSecondary,
+                        ? AppTheme.accent(context)
+                        : AppTheme.textSecondaryC(context),
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),
@@ -339,6 +366,33 @@ class HistoryScreen extends ConsumerWidget {
           // Steps count
           Row(
             children: [
+              if (isPr)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('🏆', style: TextStyle(fontSize: 12)),
+                      const SizedBox(width: 2),
+                      Text(
+                        'PR',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFDAA520),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Text(
                 _formatNumber(item.steps),
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -347,9 +401,9 @@ class HistoryScreen extends ConsumerWidget {
               ),
               const SizedBox(width: 4),
               if (isGoalMet)
-                const Icon(
+                Icon(
                   Icons.check_circle_rounded,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   size: 18,
                 ),
             ],

@@ -86,15 +86,15 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
               child: Container(
                 width: MediaQuery.of(context).size.width * 0.85,
                 height: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppTheme.mintBackground,
+                decoration: BoxDecoration(
+                  color: AppTheme.bg(context),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     bottomLeft: Radius.circular(24),
                   ),
                 ),
                 child: Material(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.bg(context),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(24),
                     bottomLeft: Radius.circular(24),
@@ -167,7 +167,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTheme.cardColor(context),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -212,7 +212,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -270,7 +270,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.accentBlack,
+                color: isSelected ? AppTheme.cream : AppTheme.accentBlack,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: 14,
               ),
@@ -282,14 +282,16 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                 decoration: BoxDecoration(
                   color: showBadge
                       ? const Color(0xFFFF6B6B)
-                      : (isSelected ? Colors.white24 : Colors.black12),
+                      : (isSelected
+                            ? AppTheme.cream.withValues(alpha: 0.24)
+                            : AppTheme.cream.withValues(alpha: 0.12)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   count.toString(),
                   style: TextStyle(
                     color: isSelected || showBadge
-                        ? Colors.white
+                        ? AppTheme.cream
                         : AppTheme.accentBlack,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -406,7 +408,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       decoration: BoxDecoration(
         color: entry.isCurrentUser
             ? AppTheme.accentBlack.withValues(alpha: 0.08)
-            : Colors.white,
+            : AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: entry.isCurrentUser
             ? Border.all(
@@ -443,8 +445,8 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             height: 40,
             decoration: BoxDecoration(
               color: entry.isCurrentUser
-                  ? AppTheme.accentBlack
-                  : AppTheme.accentBlack.withValues(alpha: 0.15),
+                  ? AppTheme.accent(context)
+                  : AppTheme.accent(context).withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -452,7 +454,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                 entry.name.isNotEmpty ? entry.name[0].toUpperCase() : '?',
                 style: TextStyle(
                   color: entry.isCurrentUser
-                      ? Colors.white
+                      ? AppTheme.cream
                       : AppTheme.accentBlack,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -526,7 +528,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
         SnackBar(
           content: const Row(
             children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
+              Icon(Icons.check_circle_rounded, color: AppTheme.cream),
               SizedBox(width: 12),
               Text('Friend code copied!'),
             ],
@@ -558,6 +560,8 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
 
     final hasContent =
         challengesState.pendingChallenges.isNotEmpty ||
+        challengesState.sentChallenges.isNotEmpty ||
+        challengesState.cancelRequestedChallenges.isNotEmpty ||
         challengesState.activeChallenges.isNotEmpty ||
         challengesState.completedChallenges.isNotEmpty;
 
@@ -575,7 +579,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                 label: const Text('New Challenge'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accentBlack,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppTheme.cream,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -624,6 +628,66 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                         const SizedBox(height: 12),
                         ...challengesState.pendingChallenges.map(
                           (c) => _buildPendingChallengeCard(c),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      // Sent challenges (outgoing, waiting for acceptance)
+                      if (challengesState.sentChallenges.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF9800),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Sent',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.accentBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...challengesState.sentChallenges.map(
+                          (c) => _buildSentChallengeCard(c),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      // Cancel requested challenges
+                      if (challengesState
+                          .cancelRequestedChallenges
+                          .isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFF5722),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Cancel Requests',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.accentBlack,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...challengesState.cancelRequestedChallenges.map(
+                          (c) => _buildCancelRequestCard(c),
                         ),
                         const SizedBox(height: 20),
                       ],
@@ -687,7 +751,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
@@ -751,7 +815,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                   onPressed: () => _handleAcceptChallenge(challenge.id),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppTheme.cream,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -796,7 +860,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
@@ -884,6 +948,210 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             color: const Color(0xFFFF6B6B),
             isWinning: theirProgress > myProgress,
           ),
+          const SizedBox(height: 12),
+          // Cancel button
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _showCancelConfirmDialog(challenge),
+              icon: const Icon(Icons.cancel_outlined, size: 16),
+              label: const Text('Cancel'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFFFF5722),
+                textStyle: const TextStyle(fontSize: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Card for challenges the user SENT that are waiting for acceptance
+  Widget _buildSentChallengeCard(Challenge challenge) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFFF9800).withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(challenge.type.emoji, style: const TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  challenge.type.label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accentBlack,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Waiting for ${challenge.opponentName} to accept...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.accentBlack.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => _handleDeclineChallenge(challenge.id),
+            icon: const Icon(Icons.close, size: 18),
+            color: AppTheme.accentBlack.withValues(alpha: 0.4),
+            tooltip: 'Cancel',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Card for challenges where someone requested cancellation
+  Widget _buildCancelRequestCard(Challenge challenge) {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final iRequested = challenge.cancelRequestedBy == userId;
+    final opponentName = challenge.getOpponentName(userId);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardColor(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFFF5722).withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(challenge.type.emoji, style: const TextStyle(fontSize: 24)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      challenge.type.label,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.accentBlack,
+                      ),
+                    ),
+                    Text(
+                      'vs $opponentName',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.accentBlack.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF5722).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFFF5722),
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    iRequested
+                        ? 'You requested cancellation. Waiting for $opponentName\'s response...'
+                        : '$opponentName wants to cancel this challenge.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFFFF5722),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!iRequested) ...[
+            const SizedBox(height: 8),
+            Text(
+              'If you reject, they lose $kChallengeCancelPenalty XP and the challenge continues.',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppTheme.accentBlack.withValues(alpha: 0.5),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => _handleRejectCancel(challenge.id),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF4CAF50),
+                      side: const BorderSide(color: Color(0xFF4CAF50)),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Reject Cancel',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _handleConfirmCancel(challenge.id),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF5722),
+                      foregroundColor: AppTheme.cream,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Accept Cancel',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -947,7 +1215,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1028,9 +1296,9 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             return Container(
-              height: MediaQuery.of(ctx).size.height * 0.55,
-              decoration: const BoxDecoration(
-                color: AppTheme.mintBackground,
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: AppTheme.bg(context),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
@@ -1041,7 +1309,9 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.accentBlack.withValues(alpha: 0.2),
+                      color: AppTheme.textSecondaryC(
+                        context,
+                      ).withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1049,10 +1319,10 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                     padding: const EdgeInsets.all(20),
                     child: Text(
                       step == 0 ? 'Choose Opponent' : 'Challenge Setup',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                   ),
@@ -1110,8 +1380,8 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             leading: Container(
               width: 44,
               height: 44,
-              decoration: const BoxDecoration(
-                color: AppTheme.accentBlack,
+              decoration: BoxDecoration(
+                color: AppTheme.accent(context),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -1119,8 +1389,8 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                   friend.displayName.isNotEmpty
                       ? friend.displayName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppTheme.cardColor(context),
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1145,7 +1415,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
               Icons.chevron_right_rounded,
               color: AppTheme.accentBlack,
             ),
-            tileColor: Colors.white,
+            tileColor: AppTheme.cardColor(context),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1164,6 +1434,11 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
     required VoidCallback onSend,
     required VoidCallback onBack,
   }) {
+    final textColor = AppTheme.textPrimaryC(context);
+    final subtextColor = AppTheme.textSecondaryC(context);
+    final cardBg = AppTheme.cardColor(context);
+    final accentColor = AppTheme.accent(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -1174,29 +1449,23 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             children: [
               GestureDetector(
                 onTap: onBack,
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: AppTheme.accentBlack,
-                ),
+                child: Icon(Icons.arrow_back_rounded, color: textColor),
               ),
               const SizedBox(width: 10),
               Text(
                 'vs $friendName',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.accentBlack.withValues(alpha: 0.7),
-                ),
+                style: TextStyle(fontSize: 14, color: subtextColor),
               ),
             ],
           ),
           const SizedBox(height: 20),
           // Challenge type picker
-          const Text(
+          Text(
             'Challenge Type',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.accentBlack,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 10),
@@ -1209,12 +1478,12 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppTheme.accentBlack.withValues(alpha: 0.08)
-                      : Colors.white,
+                      ? accentColor.withValues(alpha: 0.12)
+                      : cardBg,
                   borderRadius: BorderRadius.circular(10),
                   border: isSelected
                       ? Border.all(
-                          color: AppTheme.accentBlack.withValues(alpha: 0.3),
+                          color: accentColor.withValues(alpha: 0.4),
                           width: 1.5,
                         )
                       : null,
@@ -1234,25 +1503,20 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                               fontWeight: isSelected
                                   ? FontWeight.w700
                                   : FontWeight.w500,
-                              color: AppTheme.accentBlack,
+                              color: textColor,
                             ),
                           ),
                           Text(
                             type.description,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppTheme.accentBlack.withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
+                            style: TextStyle(fontSize: 11, color: subtextColor),
                           ),
                         ],
                       ),
                     ),
                     if (isSelected)
-                      const Icon(
+                      Icon(
                         Icons.check_circle_rounded,
-                        color: AppTheme.accentBlack,
+                        color: accentColor,
                         size: 20,
                       ),
                   ],
@@ -1262,12 +1526,12 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
           }),
           const SizedBox(height: 16),
           // Duration picker
-          const Text(
+          Text(
             'Duration',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.accentBlack,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 10),
@@ -1281,7 +1545,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.accentBlack : Colors.white,
+                      color: isSelected ? accentColor : cardBg,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1290,7 +1554,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : AppTheme.accentBlack,
+                        color: isSelected ? Colors.white : textColor,
                       ),
                     ),
                   ),
@@ -1305,7 +1569,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             child: ElevatedButton(
               onPressed: onSend,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4CAF50),
+                backgroundColor: accentColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -1405,6 +1669,117 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
     }
   }
 
+  /// Show confirmation dialog before requesting cancellation
+  void _showCancelConfirmDialog(Challenge challenge) {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final opponentName = challenge.getOpponentName(userId);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Challenge?'),
+        content: Text(
+          'You\'ll ask $opponentName to agree to cancel.\n\n'
+          '• If they agree: challenge is dissolved, no penalty.\n'
+          '• If they reject: you lose $kChallengeCancelPenalty XP and the challenge continues.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Keep Playing'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _handleRequestCancel(challenge.id);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFF5722),
+            ),
+            child: const Text('Request Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleRequestCancel(String challengeId) async {
+    try {
+      await ref.read(challengesProvider.notifier).requestCancel(challengeId);
+      HapticFeedback.lightImpact();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cancel request sent. Waiting for response...'),
+            backgroundColor: Color(0xFFFF9800),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to request cancel: ${e.toString()}'),
+            backgroundColor: const Color(0xFFFF6B6B),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleConfirmCancel(String challengeId) async {
+    try {
+      await ref.read(challengesProvider.notifier).confirmCancel(challengeId);
+      HapticFeedback.mediumImpact();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Challenge cancelled by mutual agreement ✌️'),
+            backgroundColor: Color(0xFF4CAF50),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFFF6B6B),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRejectCancel(String challengeId) async {
+    try {
+      await ref.read(challengesProvider.notifier).rejectCancel(challengeId);
+      HapticFeedback.mediumImpact();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cancel rejected! They lost $kChallengeCancelPenalty XP 💸',
+            ),
+            backgroundColor: const Color(0xFF4CAF50),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: ${e.toString()}'),
+            backgroundColor: const Color(0xFFFF6B6B),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildRequestsTab() {
     final state = ref.watch(friendsProvider);
 
@@ -1468,7 +1843,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             fontSize: 14,
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppTheme.cardColor(context),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -1539,7 +1914,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1547,8 +1922,8 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
           Container(
             width: 48,
             height: 48,
-            decoration: const BoxDecoration(
-              color: AppTheme.accentBlack,
+            decoration: BoxDecoration(
+              color: AppTheme.accent(context),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -1557,7 +1932,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                     ? friend.displayName[0].toUpperCase()
                     : '?',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.cream,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1603,7 +1978,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1614,8 +1989,8 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
-                  color: AppTheme.accentBlack,
+                decoration: BoxDecoration(
+                  color: AppTheme.accent(context),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -1624,7 +1999,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                         ? request.senderName[0].toUpperCase()
                         : '?',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppTheme.cream,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1664,7 +2039,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
                   onPressed: () => _handleAcceptRequest(request.id),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF4CAF50),
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppTheme.cream,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1700,7 +2075,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.accentBlack.withValues(alpha: 0.1)),
       ),
@@ -1710,7 +2085,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.accentBlack.withValues(alpha: 0.1),
+              color: AppTheme.accent(context).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Center(
@@ -1799,7 +2174,7 @@ class _FriendsSidebarState extends ConsumerState<FriendsSidebar>
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.accentBlack,
-                foregroundColor: Colors.white,
+                foregroundColor: AppTheme.cream,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

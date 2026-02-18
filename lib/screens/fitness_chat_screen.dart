@@ -96,20 +96,20 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
     return Theme(
       data: theme.copyWith(
         textSelectionTheme: TextSelectionThemeData(
-          cursorColor: AppTheme.accentBlack,
-          selectionColor: AppTheme.accentBlack.withValues(alpha: 0.3),
-          selectionHandleColor: AppTheme.accentBlack,
+          cursorColor: AppTheme.accent(context),
+          selectionColor: AppTheme.accent(context).withValues(alpha: 0.3),
+          selectionHandleColor: AppTheme.accent(context),
         ),
       ),
       child: Scaffold(
-        backgroundColor: AppTheme.mintBackground,
+        backgroundColor: AppTheme.subtleBg(context),
         appBar: AppBar(
-          backgroundColor: AppTheme.mintBackground,
+          backgroundColor: AppTheme.subtleBg(context),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.arrow_back_rounded,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
             onPressed: () => Navigator.pop(context),
           ),
@@ -120,8 +120,8 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppTheme.accentBlack,
-                      AppTheme.accentBlack.withValues(alpha: 0.8),
+                      AppTheme.accent(context),
+                      AppTheme.accent(context).withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(10),
@@ -136,7 +136,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
               Text(
                 'Fitness Assistant',
                 style: theme.textTheme.titleLarge?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -159,8 +159,8 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: _isDetailedMode
-                        ? AppTheme.accentBlack
-                        : AppTheme.accentBlack.withValues(alpha: 0.1),
+                        ? AppTheme.accent(context)
+                        : AppTheme.accent(context).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -173,7 +173,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                         size: 16,
                         color: _isDetailedMode
                             ? Colors.white
-                            : AppTheme.accentBlack,
+                            : AppTheme.accent(context),
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -181,7 +181,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: _isDetailedMode
                               ? Colors.white
-                              : AppTheme.accentBlack,
+                              : AppTheme.accent(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -191,9 +191,9 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
               ),
             ),
             PopupMenuButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.more_vert_rounded,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
               itemBuilder: (context) => [
                 PopupMenuItem(
@@ -230,19 +230,19 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                 child: Row(
                   children: [
                     const SizedBox(width: 16),
-                    const SizedBox(
+                    SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'Thinking...',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                   ],
@@ -303,7 +303,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.cardColor(context),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -317,14 +317,14 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                   children: [
                     // Camera button
                     IconButton(
-                      icon: const Icon(Icons.camera_alt_rounded),
-                      color: AppTheme.accentBlack,
+                      icon: Icon(Icons.camera_alt_rounded),
+                      color: AppTheme.accent(context),
                       onPressed: () => _pickImage(ImageSource.camera),
                     ),
                     // Gallery button
                     IconButton(
-                      icon: const Icon(Icons.photo_rounded),
-                      color: AppTheme.accentBlack,
+                      icon: Icon(Icons.photo_rounded),
+                      color: AppTheme.accent(context),
                       onPressed: () => _pickImage(ImageSource.gallery),
                     ),
                     const SizedBox(width: 8),
@@ -332,24 +332,24 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                     Expanded(
                       child: TextField(
                         controller: _textController,
-                        cursorColor: AppTheme.textPrimary,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
+                        cursorColor: AppTheme.textPrimaryC(context),
+                        style: TextStyle(
+                          color: AppTheme.textPrimaryC(context),
                           fontSize: 15,
                         ),
                         decoration: InputDecoration(
                           hintText: 'Ask me anything...',
                           hintStyle: TextStyle(
-                            color: AppTheme.textSecondary.withValues(
-                              alpha: 0.5,
-                            ),
+                            color: AppTheme.textSecondaryC(
+                              context,
+                            ).withValues(alpha: 0.5),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(24),
                             borderSide: BorderSide.none,
                           ),
                           filled: true,
-                          fillColor: AppTheme.mintBackground,
+                          fillColor: AppTheme.subtleBg(context),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 20,
                             vertical: 12,
@@ -366,8 +366,8 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                       onTap: _sendMessage,
                       child: Container(
                         padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accentBlack,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accent(context),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -399,8 +399,8 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppTheme.accentBlack,
-                    AppTheme.accentBlack.withValues(alpha: 0.8),
+                    AppTheme.accent(context),
+                    AppTheme.accent(context).withValues(alpha: 0.8),
                   ],
                 ),
                 shape: BoxShape.circle,
@@ -415,7 +415,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
             Text(
               'Your Fitness Assistant',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -424,7 +424,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
               'Ask me about workouts, nutrition, calories, or upload food photos for analysis!',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
               ),
             ),
             const SizedBox(height: 32),
@@ -451,21 +451,21 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: AppTheme.cardDecoration,
+        decoration: AppTheme.cardDecorationOf(context),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.lightbulb_outline_rounded,
               size: 16,
-              color: AppTheme.accentBlack,
+              color: AppTheme.accent(context),
             ),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
                 text,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
             ),
@@ -489,8 +489,8 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
           if (!isUser) ...[
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: AppTheme.accentBlack,
+              decoration: BoxDecoration(
+                color: AppTheme.accent(context),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -510,7 +510,9 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isUser ? AppTheme.accentBlack : Colors.white,
+                    color: isUser
+                        ? AppTheme.accent(context)
+                        : AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -561,7 +563,7 @@ class _FitnessChatScreenState extends ConsumerState<FitnessChatScreen> {
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: isUser
                                   ? Colors.white
-                                  : AppTheme.textPrimary,
+                                  : AppTheme.textPrimaryC(context),
                             ),
                             selectionControls: MaterialTextSelectionControls(),
                           ),

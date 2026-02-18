@@ -116,14 +116,17 @@ class _StatsContentState extends ConsumerState<StatsContent>
     final theme = Theme.of(context);
 
     // Classic theme colors
-    const accentColor = AppTheme.accentBlack;
-    const accentBgColor = AppTheme.mintBackground;
+    final accentColor = AppTheme.accent(context);
+    final accentBgColor = AppTheme.subtleBg(context);
 
     // Include today's steps in calculations
     final todaySteps = stepState.todaySteps;
 
     // Get filtered data for chart
     final chartData = _getFilteredData(history, todaySteps);
+
+    // Compute PR dates from all history + today
+    final prDates = _getPrDates(history, todaySteps);
 
     // Calculate stats (including today)
     final totalSteps =
@@ -171,7 +174,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -190,6 +193,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                             settings.dailyGoal,
                             theme,
                             accentColor,
+                            prDates,
                           ),
                   ),
                 ),
@@ -206,7 +210,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                     width: double.infinity,
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.cardColor(context),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -221,14 +225,16 @@ class _StatsContentState extends ConsumerState<StatsContent>
                         Icon(
                           Icons.directions_walk_rounded,
                           size: 48,
-                          color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                          color: AppTheme.textSecondaryC(
+                            context,
+                          ).withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 12),
                         Text(
                           'Your stats will appear after your first walk 👟',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                       ],
@@ -324,12 +330,12 @@ class _StatsContentState extends ConsumerState<StatsContent>
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: AppTheme.subtleBg(context),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.directions_walk_rounded,
-                color: AppTheme.accentBlack,
+                color: AppTheme.accent(context),
                 size: 24,
               ),
             ),
@@ -338,14 +344,14 @@ class _StatsContentState extends ConsumerState<StatsContent>
               _formatNumber(todaySteps),
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               'steps',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
               ),
             ),
           ],
@@ -356,7 +362,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
               ? 'Take $stepsLeft more steps today!'
               : 'Goal achieved! 🎉',
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppTheme.textSecondary,
+            color: AppTheme.textSecondaryC(context),
           ),
         ),
       ],
@@ -367,7 +373,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppTheme.mintBackground,
+        color: AppTheme.subtleBg(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -379,7 +385,9 @@ class _StatsContentState extends ConsumerState<StatsContent>
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white : Colors.transparent,
+                  color: isSelected
+                      ? AppTheme.cardColor(context)
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isSelected
                       ? [
@@ -400,8 +408,8 @@ class _StatsContentState extends ConsumerState<StatsContent>
                           ? FontWeight.w600
                           : FontWeight.w500,
                       color: isSelected
-                          ? AppTheme.accentBlack
-                          : AppTheme.textSecondary,
+                          ? AppTheme.accent(context)
+                          : AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ),
@@ -422,20 +430,20 @@ class _StatsContentState extends ConsumerState<StatsContent>
           Icon(
             Icons.bar_chart_rounded,
             size: 48,
-            color: AppTheme.textSecondary.withValues(alpha: 0.5),
+            color: AppTheme.textSecondaryC(context).withValues(alpha: 0.5),
           ),
           const SizedBox(height: 12),
           Text(
             'No activity yet',
             style: theme.textTheme.titleSmall?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
           const SizedBox(height: 4),
           Text(
             'Start walking to see your chart!',
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              color: AppTheme.textSecondaryC(context).withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -448,6 +456,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
     int goal,
     ThemeData theme,
     Color accentColor,
+    Set<String> prDates,
   ) {
     if (data.isEmpty) return const SizedBox.shrink();
 
@@ -474,7 +483,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
           horizontalInterval: goal.toDouble(),
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppTheme.textSecondary.withValues(alpha: 0.2),
+              color: AppTheme.textSecondaryC(context).withValues(alpha: 0.2),
               strokeWidth: 1,
               dashArray: [5, 5],
             );
@@ -507,7 +516,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                     '${date.day}',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                 );
@@ -519,6 +528,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
           final index = entry.key;
           final item = entry.value;
           final isGoalMet = item.steps >= goal;
+          final isPr = prDates.contains(item.date);
 
           return BarChartGroupData(
             x: index,
@@ -532,14 +542,20 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: isGoalMet
+                  colors: isPr
+                      ? [const Color(0xFFDAA520), const Color(0xFFFFD700)]
+                      : isGoalMet
                       ? [
-                          AppTheme.accentBlack.withValues(alpha: 0.7),
-                          AppTheme.accentBlack,
+                          AppTheme.accent(context).withValues(alpha: 0.7),
+                          AppTheme.accent(context),
                         ]
                       : [
-                          AppTheme.textSecondary.withValues(alpha: 0.4),
-                          AppTheme.textSecondary.withValues(alpha: 0.6),
+                          AppTheme.textSecondaryC(
+                            context,
+                          ).withValues(alpha: 0.4),
+                          AppTheme.textSecondaryC(
+                            context,
+                          ).withValues(alpha: 0.6),
                         ],
                 ),
               ),
@@ -579,7 +595,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -604,7 +620,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
           Text(
             title,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
           const SizedBox(height: 4),
@@ -612,13 +628,13 @@ class _StatsContentState extends ConsumerState<StatsContent>
             value,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           Text(
             subtitle,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
         ],
@@ -631,6 +647,25 @@ class _StatsContentState extends ConsumerState<StatsContent>
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
+  }
+
+  /// Compute PR dates from history + today
+  Set<String> _getPrDates(List<StepData> history, int todaySteps) {
+    final prDates = <String>{};
+    int runningMax = 0;
+    // History is newest-first; reverse to scan chronologically
+    for (final item in history.reversed) {
+      if (item.steps > runningMax && item.steps > 0) {
+        runningMax = item.steps;
+        prDates.add(item.date);
+      }
+    }
+    // Check if today is a new PR
+    if (todaySteps > runningMax && todaySteps > 0) {
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      prDates.add(todayStr);
+    }
+    return prDates;
   }
 
   Widget _buildBmiCard(BuildContext context, dynamic settings) {
@@ -664,7 +699,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor(context),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -682,12 +717,12 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.mintBackground,
+                    color: AppTheme.subtleBg(context),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.monitor_weight_rounded,
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                     size: 20,
                   ),
                 ),
@@ -699,13 +734,13 @@ class _StatsContentState extends ConsumerState<StatsContent>
                       Text(
                         'Body Mass Index',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                       Text(
                         'Tap for TDEE & Weight Tracking',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                           fontSize: 10,
                         ),
                       ),
@@ -714,7 +749,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                   size: 16,
                 ),
               ],
@@ -730,7 +765,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                   bmi.toStringAsFixed(1),
                   style: theme.textTheme.displayMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -806,31 +841,31 @@ class _StatsContentState extends ConsumerState<StatsContent>
                 Text(
                   '15',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '18.5',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '25',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '30',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '40',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -844,14 +879,14 @@ class _StatsContentState extends ConsumerState<StatsContent>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       children: [
                         Icon(
                           Icons.height_rounded,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           size: 20,
                         ),
                         const SizedBox(height: 4),
@@ -860,7 +895,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                               ? '$heightCm cm'
                               : '${(heightCm / 2.54).toStringAsFixed(1)} in',
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -873,14 +908,14 @@ class _StatsContentState extends ConsumerState<StatsContent>
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       children: [
                         Icon(
                           Icons.monitor_weight_outlined,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           size: 20,
                         ),
                         const SizedBox(height: 4),
@@ -889,7 +924,7 @@ class _StatsContentState extends ConsumerState<StatsContent>
                               ? '$weightKg kg'
                               : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

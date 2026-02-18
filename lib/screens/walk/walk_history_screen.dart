@@ -37,21 +37,21 @@ class _WalkHistoryScreenState extends ConsumerState<WalkHistoryScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_rounded,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Walk History',
           style: TextStyle(
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -109,7 +109,7 @@ class _WalkHistoryScreenState extends ConsumerState<WalkHistoryScreen> {
           Icon(
             Icons.directions_walk_rounded,
             size: 80,
-            color: AppTheme.textSecondary.withValues(alpha: 0.3),
+            color: AppTheme.textSecondaryC(context).withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(
@@ -117,14 +117,14 @@ class _WalkHistoryScreenState extends ConsumerState<WalkHistoryScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
+              color: AppTheme.textSecondaryC(context),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Start tracking your walks to see them here!',
             style: TextStyle(
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              color: AppTheme.textSecondaryC(context).withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -150,7 +150,7 @@ class _WalkHistoryCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardColor(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -169,15 +169,18 @@ class _WalkHistoryCard extends StatelessWidget {
               children: [
                 Text(
                   dateFormat.format(walk.startTime),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 Text(
                   timeFormat.format(walk.startTime),
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                  style: TextStyle(
+                    color: AppTheme.textSecondaryC(context),
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -213,7 +216,7 @@ class _WalkHistoryCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -222,14 +225,14 @@ class _WalkHistoryCard extends StatelessWidget {
                     Icon(
                       Icons.speed_rounded,
                       size: 16,
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                     const SizedBox(width: 6),
                     Text(
                       'Avg pace: ${walk.paceMinPerKm.toStringAsFixed(1)} min/km',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                   ],
@@ -247,7 +250,9 @@ class _WalkHistoryCard extends StatelessWidget {
                         : Icons.star_outline_rounded,
                     color: index < walk.rating
                         ? Colors.amber
-                        : AppTheme.textSecondary.withValues(alpha: 0.3),
+                        : AppTheme.textSecondaryC(
+                            context,
+                          ).withValues(alpha: 0.3),
                     size: 18,
                   );
                 }),
@@ -260,7 +265,7 @@ class _WalkHistoryCard extends StatelessWidget {
                 walk.description!,
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                   fontStyle: FontStyle.italic,
                 ),
                 maxLines: 2,
@@ -311,19 +316,22 @@ class _StatChip extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, size: 18, color: AppTheme.textSecondary),
+          Icon(icon, size: 18, color: AppTheme.textSecondaryC(context)),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+            style: TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondaryC(context),
+            ),
           ),
         ],
       ),

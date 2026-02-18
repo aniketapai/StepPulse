@@ -292,7 +292,7 @@ class _UpdateDialogState extends State<_UpdateDialog> {
             const SizedBox(height: 16),
             LinearProgressIndicator(
               value: _progress > 0 ? _progress : null,
-              backgroundColor: AppTheme.mintBackground,
+              backgroundColor: AppTheme.bg(context),
               valueColor: const AlwaysStoppedAnimation(AppTheme.accentBlack),
             ),
             const SizedBox(height: 8),

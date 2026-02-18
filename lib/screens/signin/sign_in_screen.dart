@@ -25,7 +25,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -38,7 +38,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -53,7 +53,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 'Welcome Back!',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -61,7 +61,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 'Sign in to continue tracking your steps and progress.',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
 
@@ -117,7 +117,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       Text(
                         _isSigningIn ? 'Signing in...' : 'Sign in with Google',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: isDark ? Colors.white : AppTheme.textPrimary,
+                          color: isDark ? Colors.white : AppTheme.textPrimaryC(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),

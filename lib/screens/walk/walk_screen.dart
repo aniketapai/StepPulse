@@ -269,7 +269,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: Stack(
         children: [
           // Map
@@ -288,7 +288,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.cardColor(context),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -298,10 +298,10 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                           ),
                         ],
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                   ),
@@ -313,7 +313,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                       child: Container(
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.cardColor(context),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -327,43 +327,40 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                           controller: _searchController,
                           focusNode: _searchFocusNode,
                           onChanged: _onSearchChanged,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
+                          style: TextStyle(
+                            color: AppTheme.textPrimaryC(context),
                             fontSize: 14,
                           ),
-                          cursorColor: AppTheme.accentBlack,
+                          cursorColor: AppTheme.accent(context),
                           decoration: InputDecoration(
                             hintText: 'Search destination...',
                             hintStyle: TextStyle(
-                              color: AppTheme.textSecondary.withValues(
-                                alpha: 0.6,
-                              ),
+                              color: AppTheme.textSecondaryC(
+                                context,
+                              ).withValues(alpha: 0.6),
                               fontSize: 14,
                             ),
                             prefixIcon: _isSearching
-                                ? const Padding(
+                                ? Padding(
                                     padding: EdgeInsets.all(12),
                                     child: SizedBox(
                                       width: 18,
                                       height: 18,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: AppTheme.accentBlack,
+                                        color: AppTheme.accent(context),
                                       ),
                                     ),
                                   )
-                                : const Icon(
+                                : Icon(
                                     Icons.search_rounded,
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.textSecondaryC(context),
                                     size: 20,
                                   ),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(
-                                      Icons.close_rounded,
-                                      size: 18,
-                                    ),
-                                    color: AppTheme.textSecondary,
+                                    icon: Icon(Icons.close_rounded, size: 18),
+                                    color: AppTheme.textSecondaryC(context),
                                     onPressed: () {
                                       _searchController.clear();
                                       _onSearchChanged('');
@@ -390,7 +387,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.cardColor(context),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
@@ -418,7 +415,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.cardColor(context),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -428,10 +425,10 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                             ),
                           ],
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.history_rounded,
                           size: 20,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                     ),
@@ -452,7 +449,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                   margin: const EdgeInsets.only(top: 4),
                   constraints: const BoxConstraints(maxHeight: 200),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -475,9 +472,9 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                         ),
                         title: Text(
                           result.shortName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -486,7 +483,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                           result.displayName,
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -510,7 +507,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                   margin: const EdgeInsets.only(top: 4),
                   constraints: const BoxConstraints(maxHeight: 200),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -531,7 +528,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                       ),
@@ -549,9 +546,9 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                               ),
                               title: Text(
                                 search['shortName'] as String? ?? 'Unknown',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.textPrimary,
+                                  color: AppTheme.textPrimaryC(context),
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -560,7 +557,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                                 search['displayName'] as String? ?? '',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppTheme.textSecondary,
+                                  color: AppTheme.textSecondaryC(context),
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -595,7 +592,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -618,13 +615,13 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                               walkState.plannedRoute!.formattedDistance,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.textPrimary,
+                                color: AppTheme.textPrimaryC(context),
                               ),
                             ),
                             Text(
                               '${walkState.plannedRoute!.formattedDuration} walk',
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppTheme.textSecondary,
+                                color: AppTheme.textSecondaryC(context),
                               ),
                             ),
                           ],
@@ -661,7 +658,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppTheme.cardColor(context),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -685,7 +682,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                       Text(
                         'Finding route...',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                       ),
                     ],
@@ -726,8 +723,10 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
           if (walkState.isLoading)
             Container(
               color: Colors.black.withValues(alpha: 0.3),
-              child: const Center(
-                child: CircularProgressIndicator(color: AppTheme.accentBlack),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.accent(context),
+                ),
               ),
             ),
 
@@ -812,7 +811,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
             polylines: [
               Polyline(
                 points: walkState.session.polylinePoints,
-                color: AppTheme.accentBlack,
+                color: AppTheme.accent(context),
                 strokeWidth: 5,
               ),
             ],
@@ -972,7 +971,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
               'Recent Walks',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             TextButton(
@@ -1020,7 +1019,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
         width: 160,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.mintBackground,
+          color: AppTheme.subtleBg(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.grey.shade200, width: 1),
         ),
@@ -1033,12 +1032,15 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                 Icon(
                   Icons.calendar_today_rounded,
                   size: 14,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   formattedDate,
-                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondaryC(context),
+                  ),
                 ),
               ],
             ),
@@ -1051,14 +1053,14 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                       '${distanceKm.toStringAsFixed(1)} km',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                     Text(
                       _formatDuration(duration),
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                   ],
@@ -1111,7 +1113,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18),
         decoration: BoxDecoration(
-          color: AppTheme.accentBlack,
+          color: AppTheme.accent(context),
           borderRadius: BorderRadius.circular(16),
         ),
         child: const Row(
@@ -1209,7 +1211,9 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: isPaused ? AppTheme.accentBlack : Colors.orange.shade50,
+                color: isPaused
+                    ? AppTheme.accent(context)
+                    : Colors.orange.shade50,
                 borderRadius: BorderRadius.circular(16),
                 border: isPaused
                     ? null
@@ -1255,14 +1259,14 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
           children: [
             const Icon(Icons.stop_circle_outlined, color: Colors.red, size: 48),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'End Walk?',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               'Your walk will be saved to history.',
-              style: TextStyle(color: AppTheme.textSecondary),
+              style: TextStyle(color: AppTheme.textSecondaryC(context)),
             ),
             const SizedBox(height: 24),
             Row(
@@ -1273,15 +1277,15 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: AppTheme.mintBackground,
+                        color: AppTheme.subtleBg(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Continue',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                     ),
@@ -1302,7 +1306,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
@@ -1414,19 +1418,22 @@ class _StatItem extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: AppTheme.textSecondary),
+        Icon(icon, size: 18, color: AppTheme.textSecondaryC(context)),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+          style: TextStyle(
+            fontSize: 11,
+            color: AppTheme.textSecondaryC(context),
+          ),
         ),
       ],
     );
@@ -1445,16 +1452,19 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          style: TextStyle(
+            fontSize: 12,
+            color: AppTheme.textSecondaryC(context),
+          ),
         ),
       ],
     );
@@ -1500,12 +1510,12 @@ class _WalkSummarySheetState extends State<_WalkSummarySheet> {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: AppTheme.subtleBg(context),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_rounded,
-                color: AppTheme.accentBlack,
+                color: AppTheme.accent(context),
                 size: 32,
               ),
             ),
@@ -1541,7 +1551,7 @@ class _WalkSummarySheetState extends State<_WalkSummarySheet> {
               'How was your walk?',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.textSecondaryC(context),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1559,7 +1569,7 @@ class _WalkSummarySheetState extends State<_WalkSummarySheet> {
                           : Icons.star_outline_rounded,
                       color: index < _rating
                           ? Colors.amber
-                          : AppTheme.textSecondary,
+                          : AppTheme.textSecondaryC(context),
                       size: 36,
                     ),
                   ),
@@ -1572,15 +1582,17 @@ class _WalkSummarySheetState extends State<_WalkSummarySheet> {
             TextField(
               controller: _descriptionController,
               maxLines: 2,
-              style: const TextStyle(color: AppTheme.textPrimary),
-              cursorColor: AppTheme.accentBlack,
+              style: TextStyle(color: AppTheme.textPrimary),
+              cursorColor: AppTheme.accent(context),
               decoration: InputDecoration(
                 hintText: 'Add a note about your walk (optional)',
                 hintStyle: TextStyle(
-                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  color: AppTheme.textSecondaryC(
+                    context,
+                  ).withValues(alpha: 0.6),
                 ),
                 filled: true,
-                fillColor: AppTheme.mintBackground,
+                fillColor: AppTheme.subtleBg(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -1605,7 +1617,7 @@ class _WalkSummarySheetState extends State<_WalkSummarySheet> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(

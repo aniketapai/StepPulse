@@ -48,12 +48,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // final storage = ref.watch(storageServiceProvider); // Unused
     final theme = Theme.of(context);
 
-    // Classic theme colors
-    const accentColor = AppTheme.accentBlack;
-    const backgroundColor = AppTheme.mintBackground;
+    // Theme-aware colors
+    final accentColor = AppTheme.accent(context);
+    final bgColor = AppTheme.bg(context);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: bgColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -69,20 +69,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppTheme.cardColor(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                   ),
                   Text(
                     'Settings',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                   const SizedBox(width: 44),
@@ -113,14 +113,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _formatNumber(_goalValue.round()),
                             style: theme.textTheme.displayMedium?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'steps per day',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -169,13 +169,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 Text(
                                   '${kMinGoal ~/ 1000}K',
                                   style: theme.textTheme.labelMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.textSecondaryC(context),
                                   ),
                                 ),
                                 Text(
                                   '${kMaxGoal ~/ 1000}K',
                                   style: theme.textTheme.labelMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.textSecondaryC(context),
                                   ),
                                 ),
                               ],
@@ -218,6 +218,65 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   const SizedBox(height: 16),
 
+                  // Dark Mode section
+                  RepaintBoundary(
+                    child: _buildSection(
+                      context,
+                      title: 'Appearance',
+                      icon: Icons.dark_mode_rounded,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Choose your preferred theme',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondaryC(context),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              _buildThemeOption(
+                                context,
+                                icon: Icons.brightness_auto_rounded,
+                                label: 'System',
+                                isSelected:
+                                    settings.themeMode == ThemeMode.system,
+                                onTap: () => ref
+                                    .read(settingsProvider.notifier)
+                                    .setThemeMode(ThemeMode.system),
+                              ),
+                              const SizedBox(width: 8),
+                              _buildThemeOption(
+                                context,
+                                icon: Icons.light_mode_rounded,
+                                label: 'Light',
+                                isSelected:
+                                    settings.themeMode == ThemeMode.light,
+                                onTap: () => ref
+                                    .read(settingsProvider.notifier)
+                                    .setThemeMode(ThemeMode.light),
+                              ),
+                              const SizedBox(width: 8),
+                              _buildThemeOption(
+                                context,
+                                icon: Icons.dark_mode_rounded,
+                                label: 'Dark',
+                                isSelected:
+                                    settings.themeMode == ThemeMode.dark,
+                                onTap: () => ref
+                                    .read(settingsProvider.notifier)
+                                    .setThemeMode(ThemeMode.dark),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
                   // App Updates section
                   RepaintBoundary(
                     child: _buildSection(
@@ -237,10 +296,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () =>
                                   UpdateService.checkForUpdateManually(context),
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Check for Updates'),
+                              icon: Icon(Icons.refresh_rounded),
+                              label: Text('Check for Updates'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.accentBlack,
+                                backgroundColor: AppTheme.accent(context),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 16,
@@ -270,9 +329,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           context,
                           title: 'Sign Out',
                           subtitle: 'Sign out of your account',
-                          trailing: const Icon(
+                          trailing: Icon(
                             Icons.logout_rounded,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                       ),
@@ -293,7 +352,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Text(
                             'Export your step history as a CSV file',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -301,10 +360,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: () => _showExportDialog(),
-                              icon: const Icon(Icons.file_download_rounded),
-                              label: const Text('Export Step History'),
+                              icon: Icon(Icons.file_download_rounded),
+                              label: Text('Export Step History'),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.accentBlack,
+                                backgroundColor: AppTheme.accent(context),
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 16,
@@ -374,7 +433,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Text(
                             'Track your steps, earn XP, and achieve your fitness goals with StepPulse. A gamified step counter that makes walking fun!',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -398,7 +457,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 width: 50,
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: AppTheme.accentBlack,
+                                  color: AppTheme.accent(context),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
@@ -416,7 +475,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       'Aniket Pai',
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
-                                            color: AppTheme.textPrimary,
+                                            color: AppTheme.textPrimaryC(
+                                              context,
+                                            ),
                                             fontWeight: FontWeight.w600,
                                           ),
                                     ),
@@ -424,7 +485,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       'Mobile App Developer',
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
-                                            color: AppTheme.textSecondary,
+                                            color: AppTheme.textSecondaryC(
+                                              context,
+                                            ),
                                           ),
                                     ),
                                   ],
@@ -442,7 +505,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: AppTheme.mintBackground,
+                                color: AppTheme.subtleBg(context),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
@@ -450,13 +513,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Icon(
                                     Icons.link_rounded,
                                     size: 20,
-                                    color: AppTheme.accentBlack,
+                                    color: AppTheme.accent(context),
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'github.com/aniketapai',
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: AppTheme.accentBlack,
+                                      color: AppTheme.accent(context),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -464,7 +527,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   Icon(
                                     Icons.open_in_new_rounded,
                                     size: 18,
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.textSecondaryC(context),
                                   ),
                                 ],
                               ),
@@ -495,7 +558,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.cardDecorationOf(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -504,16 +567,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.mintBackground,
+                  color: AppTheme.subtleBg(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AppTheme.textPrimary, size: 20),
+                child: Icon(
+                  icon,
+                  color: AppTheme.textPrimaryC(context),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
             ],
@@ -521,6 +588,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 20),
           child,
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.accent(context)
+                : AppTheme.subtleBg(context),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: isSelected
+                    ? (AppTheme.isDark(context)
+                          ? AppTheme.textPrimary
+                          : Colors.white)
+                    : AppTheme.textSecondaryC(context),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? (AppTheme.isDark(context)
+                            ? AppTheme.textPrimary
+                            : Colors.white)
+                      : AppTheme.textSecondaryC(context),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -541,14 +657,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Text(
                 title,
                 style: theme.textTheme.titleSmall?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
             ],
@@ -567,18 +683,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         childrenPadding: const EdgeInsets.only(bottom: 8),
         title: Text(
           question,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(color: AppTheme.textPrimary),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: AppTheme.textPrimaryC(context),
+          ),
         ),
-        iconColor: AppTheme.textSecondary,
-        collapsedIconColor: AppTheme.textSecondary,
+        iconColor: AppTheme.textSecondaryC(context),
+        collapsedIconColor: AppTheme.textSecondaryC(context),
         children: [
           Text(
             answer,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppTheme.textSecondary),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.textSecondaryC(context),
+            ),
           ),
         ],
       ),
@@ -598,8 +714,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppTheme.sheetBg(context),
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -614,19 +730,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Sign Out?',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'You will need to sign in again to access your account.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textSecondary),
+              style: TextStyle(color: AppTheme.textSecondaryC(context)),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -655,7 +771,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
+                  foregroundColor: AppTheme.textSecondaryC(context),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -708,8 +824,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
           padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: AppTheme.sheetBg(context),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -724,19 +840,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Export Step History',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Select time range to export',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textSecondary),
+                style: TextStyle(color: AppTheme.textSecondaryC(context)),
               ),
               const SizedBox(height: 24),
               Wrap(
@@ -753,8 +869,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? AppTheme.accentBlack
-                            : AppTheme.mintBackground,
+                            ? AppTheme.accent(context)
+                            : AppTheme.subtleBg(context),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -762,7 +878,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white
-                              : AppTheme.textPrimary,
+                              : AppTheme.textPrimaryC(context),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -779,10 +895,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Navigator.pop(context);
                     _exportData(selectedRange);
                   },
-                  icon: const Icon(Icons.share_rounded),
-                  label: const Text('Export & Share'),
+                  icon: Icon(Icons.share_rounded),
+                  label: Text('Export & Share'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.accentBlack,
+                    backgroundColor: AppTheme.accent(context),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -856,7 +972,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Exported ${sortedDates.length} days of data'),
-        backgroundColor: AppTheme.accentBlack,
+        backgroundColor: AppTheme.accent(context),
       ),
     );
   }

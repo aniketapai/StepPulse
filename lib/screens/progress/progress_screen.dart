@@ -72,6 +72,9 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     // Get history map for heatmap
     final historyMap = storage.getHistoryMap(days: 365);
 
+    // Find the current all-time high date
+    final prDate = _getAllTimeHighDate(historyMap);
+
     // Calculate stats
     final totalSteps = history.fold<int>(0, (sum, item) => sum + item.steps);
     final avgSteps = history.isNotEmpty ? totalSteps ~/ history.length : 0;
@@ -94,7 +97,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: SafeArea(
         child: Column(
           children: [
@@ -113,17 +116,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back_ios_new_rounded,
                         size: 18,
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                   ),
                   Text(
                     'Progress',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                   const SizedBox(width: 44),
@@ -145,7 +148,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
-                      decoration: AppTheme.cardDecoration,
+                      decoration: AppTheme.cardDecorationOf(context),
                       child: Column(
                         children: [
                           // Level badge
@@ -155,7 +158,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                               vertical: 8,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.accentBlack,
+                              color: AppTheme.accent(context),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -199,7 +202,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                               Container(
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: AppTheme.mintBackground,
+                                  color: AppTheme.subtleBg(context),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: FractionallySizedBox(
@@ -207,7 +210,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                                   widthFactor: xp.levelProgress,
                                   child: Container(
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accentBlack,
+                                      color: AppTheme.accent(context),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
@@ -265,14 +268,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     Text(
                       'Activity',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                     const SizedBox(height: 12),
 
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: AppTheme.cardDecoration,
+                      decoration: AppTheme.cardDecorationOf(context),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -284,6 +287,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             context,
                             historyMap,
                             settings.dailyGoal,
+                            prDate,
                           ),
                           const SizedBox(height: 16),
                           // Legend
@@ -298,7 +302,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                     Text(
                       'Recent Activity',
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppTheme.textPrimary,
+                        color: AppTheme.textPrimaryC(context),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -310,6 +314,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                             context,
                             item,
                             settings.dailyGoal,
+                            isPr: item.date == prDate,
                           ),
                         ),
 
@@ -334,10 +339,10 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: AppTheme.cardDecoration,
+        decoration: AppTheme.cardDecorationOf(context),
         child: Column(
           children: [
-            Icon(icon, color: AppTheme.textSecondary, size: 20),
+            Icon(icon, color: AppTheme.textSecondaryC(context), size: 20),
             const SizedBox(height: 8),
             Text(
               value,
@@ -370,10 +375,25 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
+  /// Find the date string of the current all-time step record
+  String? _getAllTimeHighDate(Map<String, int> historyMap) {
+    if (historyMap.isEmpty) return null;
+    String? bestDate;
+    int bestSteps = 0;
+    for (final entry in historyMap.entries) {
+      if (entry.value > bestSteps) {
+        bestSteps = entry.value;
+        bestDate = entry.key;
+      }
+    }
+    return bestDate;
+  }
+
   Widget _buildHeatmapGrid(
     BuildContext context,
     Map<String, int> historyMap,
     int goal,
+    String? prDate,
   ) {
     final now = DateTime.now();
     final weeks = <List<DateTime>>[];
@@ -397,16 +417,23 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               final dateStr = DateFormat('yyyy-MM-dd').format(date);
               final steps = historyMap[dateStr] ?? 0;
               final intensity = _getIntensity(steps, goal);
+              final isPr = prDate != null && dateStr == prDate;
 
               return GestureDetector(
-                onTap: () => _showDateDetails(context, date, steps, goal),
+                onTap: () =>
+                    _showDateDetails(context, date, steps, goal, isPr: isPr),
                 child: Container(
                   width: 12,
                   height: 12,
                   margin: const EdgeInsets.all(1.5),
                   decoration: BoxDecoration(
-                    color: _getColorForIntensity(intensity),
+                    color: isPr
+                        ? const Color(0xFFFFD700)
+                        : _getColorForIntensity(intensity),
                     borderRadius: BorderRadius.circular(2),
+                    border: isPr
+                        ? Border.all(color: const Color(0xFFDAA520), width: 1)
+                        : null,
                   ),
                 ),
               );
@@ -430,7 +457,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
   Color _getColorForIntensity(int intensity) {
     switch (intensity) {
       case 0:
-        return AppTheme.mintBackground;
+        return AppTheme.subtleBg(context);
       case 1:
         return const Color(0xFFD0D0D0); // Light grey
       case 2:
@@ -440,7 +467,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       case 4:
         return const Color(0xFF1A1A1A); // Black
       default:
-        return AppTheme.mintBackground;
+        return AppTheme.subtleBg(context);
     }
   }
 
@@ -465,6 +492,19 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
         ),
         const SizedBox(width: 8),
         Text('More', style: theme.textTheme.labelSmall),
+        const SizedBox(width: 12),
+        Container(
+          width: 12,
+          height: 12,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD700),
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(color: const Color(0xFFDAA520), width: 1),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text('🏆 PR', style: theme.textTheme.labelSmall),
       ],
     );
   }
@@ -473,12 +513,13 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     BuildContext context,
     DateTime date,
     int steps,
-    int goal,
-  ) {
+    int goal, {
+    bool isPr = false,
+  }) {
     final theme = Theme.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.sheetBg(context),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -491,27 +532,55 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
               DateFormat('EEEE, MMMM d, yyyy').format(date),
               style: theme.textTheme.titleMedium,
             ),
+            if (isPr) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFDAA520), width: 1),
+                ),
+                child: Text(
+                  '🏆 All-Time Record',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: const Color(0xFFDAA520),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Text(
               _formatNumber(steps),
               style: theme.textTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w700,
+                color: isPr ? const Color(0xFFDAA520) : null,
               ),
             ),
             Text('steps', style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
             LinearProgressIndicator(
               value: (steps / goal).clamp(0.0, 1.0),
-              backgroundColor: AppTheme.mintBackground,
+              backgroundColor: AppTheme.subtleBg(context),
               valueColor: AlwaysStoppedAnimation(
-                steps >= goal ? AppTheme.accentBlack : AppTheme.textSecondary,
+                isPr
+                    ? const Color(0xFFDAA520)
+                    : steps >= goal
+                    ? AppTheme.accent(context)
+                    : AppTheme.textSecondaryC(context),
               ),
               minHeight: 8,
               borderRadius: BorderRadius.circular(4),
             ),
             const SizedBox(height: 8),
             Text(
-              steps >= goal
+              isPr
+                  ? 'All-time best! 🏆'
+                  : steps >= goal
                   ? 'Goal reached! 🎉'
                   : '${goal - steps} steps to goal',
               style: theme.textTheme.bodySmall,
@@ -523,7 +592,12 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     );
   }
 
-  Widget _buildActivityItem(BuildContext context, dynamic item, int goal) {
+  Widget _buildActivityItem(
+    BuildContext context,
+    dynamic item,
+    int goal, {
+    bool isPr = false,
+  }) {
     final theme = Theme.of(context);
     final date = DateTime.parse(item.date);
     final isGoalMet = item.steps >= goal;
@@ -544,19 +618,44 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration,
+      decoration: isPr
+          ? BoxDecoration(
+              color: AppTheme.cardColor(context),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFDAA520), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            )
+          : AppTheme.cardDecorationOf(context),
       child: Row(
         children: [
           Container(
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isGoalMet ? AppTheme.accentBlack : AppTheme.mintBackground,
+              color: isPr
+                  ? const Color(0xFFFFD700)
+                  : isGoalMet
+                  ? AppTheme.accent(context)
+                  : AppTheme.subtleBg(context),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isGoalMet ? Icons.check_rounded : Icons.directions_walk_rounded,
-              color: isGoalMet ? Colors.white : AppTheme.textSecondary,
+              isPr
+                  ? Icons.emoji_events_rounded
+                  : isGoalMet
+                  ? Icons.check_rounded
+                  : Icons.directions_walk_rounded,
+              color: isPr
+                  ? Colors.white
+                  : isGoalMet
+                  ? Colors.white
+                  : AppTheme.textSecondaryC(context),
               size: 20,
             ),
           ),
@@ -565,7 +664,21 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(dateLabel, style: theme.textTheme.titleSmall),
+                Row(
+                  children: [
+                    Text(dateLabel, style: theme.textTheme.titleSmall),
+                    if (isPr) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        '🏆 PR',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFFDAA520),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 Text(
                   '${_formatNumber(item.steps)} steps',
                   style: theme.textTheme.bodySmall,
@@ -576,7 +689,7 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           Text(
             '+${((item.steps * 0.01).round() + (isGoalMet ? 50 : 0))} XP',
             style: theme.textTheme.titleSmall?.copyWith(
-              color: AppTheme.accentBlack,
+              color: isPr ? const Color(0xFFDAA520) : AppTheme.accent(context),
             ),
           ),
         ],
@@ -599,14 +712,14 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.accentBlack.withValues(alpha: 0.9),
-            AppTheme.accentBlack,
+            AppTheme.accent(context).withValues(alpha: 0.9),
+            AppTheme.accent(context),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.accentBlack.withValues(alpha: 0.2),
+            color: AppTheme.accent(context).withValues(alpha: 0.2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

@@ -54,8 +54,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     final theme = Theme.of(context);
 
     // Classic theme colors
-    const accentColor = AppTheme.accentBlack;
-    const accentBgColor = AppTheme.mintBackground;
+    final accentColor = AppTheme.accent(context);
+    final accentBgColor = AppTheme.subtleBg(context);
     final isGoogleUser = ref.read(authServiceProvider).isGoogleUser;
 
     // Parse member since date for display
@@ -83,16 +83,16 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.cardColor(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.people_rounded,
                           size: 24,
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                         ),
                         // Notification dot for pending requests
                         if (friendsState.pendingRequestsCount > 0)
@@ -130,7 +130,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     'Profile',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                 ),
@@ -140,13 +140,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppTheme.cardColor(context),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.settings_rounded,
                       size: 20,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                 ),
@@ -159,7 +159,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: AppTheme.cardDecoration,
+              decoration: AppTheme.cardDecorationOf(context),
               child: Column(
                 children: [
                   // Avatar
@@ -197,7 +197,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: AppTheme.accentBlack,
+                                color: AppTheme.accent(context),
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: Colors.white,
@@ -228,7 +228,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                                 textAlign: TextAlign.center,
                                 autofocus: true,
                                 style: theme.textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.textPrimary,
+                                  color: AppTheme.textPrimaryC(context),
                                 ),
                                 decoration: const InputDecoration(
                                   border: InputBorder.none,
@@ -238,8 +238,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.check_rounded),
-                              color: AppTheme.accentBlack,
+                              icon: Icon(Icons.check_rounded),
+                              color: AppTheme.accent(context),
                               onPressed: _saveName,
                             ),
                           ],
@@ -254,7 +254,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                               Text(
                                 storage.profileName,
                                 style: theme.textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.textPrimary,
+                                  color: AppTheme.textPrimaryC(context),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -263,7 +263,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                                 Icon(
                                   Icons.edit_rounded,
                                   size: 16,
-                                  color: AppTheme.textSecondary,
+                                  color: AppTheme.textSecondaryC(context),
                                 ),
                               ],
                             ],
@@ -273,7 +273,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   Text(
                     'Member for $memberDays days',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
 
@@ -289,7 +289,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: AppTheme.cardDecoration,
+              decoration: AppTheme.cardDecorationOf(context),
               child: Column(
                 children: [
                   // Level badge with info icon
@@ -302,7 +302,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentBlack,
+                          color: AppTheme.accent(context),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -321,14 +321,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                           height: 28,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppTheme.textSecondary.withValues(
-                              alpha: 0.15,
-                            ),
+                            color: AppTheme.textSecondaryC(
+                              context,
+                            ).withValues(alpha: 0.15),
                           ),
                           child: Icon(
                             Icons.info_outline_rounded,
                             size: 16,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.textSecondaryC(context),
                           ),
                         ),
                       ),
@@ -341,13 +341,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     '${xp.totalXp}',
                     style: theme.textTheme.displayMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                   Text(
                     'Total XP Earned',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -363,9 +363,9 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                           child: Stack(
                             children: [
                               Container(
-                                color: AppTheme.textSecondary.withValues(
-                                  alpha: 0.2,
-                                ),
+                                color: AppTheme.textSecondaryC(
+                                  context,
+                                ).withValues(alpha: 0.2),
                               ),
                               FractionallySizedBox(
                                 widthFactor: xp.levelProgress,
@@ -384,7 +384,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       Text(
                         '${xp.xpForNextLevel - xp.totalXp} XP to Level ${xp.level + 1}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                       ),
                     ],
@@ -404,20 +404,22 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               // Locked state - no activity yet
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: AppTheme.cardDecoration,
+                decoration: AppTheme.cardDecorationOf(context),
                 child: Column(
                   children: [
                     Icon(
                       Icons.lock_outline_rounded,
                       size: 48,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                      color: AppTheme.textSecondaryC(
+                        context,
+                      ).withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Complete your first day to unlock streaks 🔥',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -425,7 +427,9 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       'Start walking to track your progress and earn streak rewards!',
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                        color: AppTheme.textSecondaryC(
+                          context,
+                        ).withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -435,7 +439,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               // Streaks Card - only show when user has activity
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: AppTheme.cardDecoration,
+                decoration: AppTheme.cardDecorationOf(context),
                 child: Row(
                   children: [
                     Expanded(
@@ -443,7 +447,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                         children: [
                           Icon(
                             Icons.local_fire_department_rounded,
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                             size: 28,
                           ),
                           const SizedBox(height: 8),
@@ -451,14 +455,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                             '${xp.currentStreak}',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           Text(
                             'Current\nStreak',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -467,14 +471,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     Container(
                       width: 1,
                       height: 60,
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                     ),
                     Expanded(
                       child: Column(
                         children: [
                           Icon(
                             Icons.emoji_events_rounded,
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                             size: 28,
                           ),
                           const SizedBox(height: 8),
@@ -482,14 +486,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                             '${xp.longestStreak}',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           Text(
                             'Longest\nStreak',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -498,14 +502,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     Container(
                       width: 1,
                       height: 60,
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                     ),
                     Expanded(
                       child: Column(
                         children: [
                           Icon(
                             Icons.calendar_today_rounded,
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                             size: 28,
                           ),
                           const SizedBox(height: 8),
@@ -513,14 +517,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                             '${xp.totalDaysActive}',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           Text(
                             'Days\nActive',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -561,8 +565,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppTheme.sheetBg(context),
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20),
             topRight: Radius.circular(20),
@@ -596,7 +600,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   'XP System',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
               ],
@@ -609,13 +613,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: AppTheme.subtleBg(context),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '👣 100 steps = +1 XP   🎯 Goal = +50 XP   🔥 Streak = +10 XP/day',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -631,7 +635,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 'Levels',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
             ),
@@ -658,7 +662,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   child: Text(
                     '${index + 1}. ${kLevelTitles[index]} · ${_formatNumber(xpRequired)} XP',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -687,7 +691,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.mintBackground,
+          color: AppTheme.subtleBg(context),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -706,7 +710,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               Text(
                 'Loading rank...',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               )
             else if (leaderboard.userRank != null)
@@ -714,14 +718,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 '#${leaderboard.userRank} of ${leaderboard.totalUsers} walkers',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               )
             else
               Text(
                 'View Leaderboard',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
 
@@ -731,14 +735,14 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             Text(
               'View All',
               style: theme.textTheme.labelMedium?.copyWith(
-                color: AppTheme.accentBlack,
+                color: AppTheme.accent(context),
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(width: 4),
             Icon(
               Icons.chevron_right_rounded,
-              color: AppTheme.accentBlack,
+              color: AppTheme.accent(context),
               size: 18,
             ),
           ],
@@ -929,7 +933,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.mintBackground.withValues(alpha: 0.5),
+              color: AppTheme.subtleBg(context).withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -938,13 +942,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 Icon(
                   Icons.emoji_events_rounded,
                   size: 16,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '$unlockedCount / ${_badgeDefinitions.length} Badges',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -955,7 +959,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   child: Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 18,
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                   ),
                 ),
               ],
@@ -1065,7 +1069,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
           margin: const EdgeInsets.all(40),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.cardColor(context),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -1110,17 +1114,20 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               const SizedBox(height: 16),
               Text(
                 badge['name'] as String,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 badge['desc'] as String,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondaryC(context),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -1173,14 +1180,20 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
   Widget _buildRestDayCard(BuildContext context, ThemeData theme) {
     final storage = ref.watch(storageServiceProvider);
     final isRestDay = storage.isTodayRestDay;
+    final dark = AppTheme.isDark(context);
+
+    // Earthy-compatible rest day accent colors
+    const restActiveDark = Color(0xFF5A8A7A); // muted teal-sage
+    const restActiveLight = Color(0xFF4A7A6A); // deeper teal for light mode
+    final restAccent = dark ? restActiveDark : restActiveLight;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(16),
         border: isRestDay
-            ? Border.all(color: Colors.purple.shade300, width: 2)
+            ? Border.all(color: restAccent.withValues(alpha: 0.6), width: 2)
             : null,
         boxShadow: [
           BoxShadow(
@@ -1198,13 +1211,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             height: 48,
             decoration: BoxDecoration(
               color: isRestDay
-                  ? Colors.purple.shade50
-                  : AppTheme.mintBackground,
+                  ? restAccent.withValues(alpha: dark ? 0.15 : 0.12)
+                  : AppTheme.subtleBg(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               Icons.bedtime_rounded,
-              color: isRestDay ? Colors.purple.shade600 : AppTheme.accentBlack,
+              color: isRestDay ? restAccent : AppTheme.accent(context),
               size: 24,
             ),
           ),
@@ -1218,7 +1231,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   'Rest Day',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1228,8 +1241,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       : 'Rest days won\'t break your streak',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isRestDay
-                        ? Colors.purple.shade600
-                        : AppTheme.textSecondary,
+                        ? restAccent
+                        : AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -1244,8 +1257,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 await storage.toggleTodayRestDay();
                 setState(() {});
               },
-              activeThumbColor: Colors.purple.shade600,
-              activeTrackColor: Colors.purple.shade200,
+              activeThumbColor: restAccent,
+              activeTrackColor: restAccent.withValues(alpha: 0.3),
             ),
           ),
         ],
@@ -1292,7 +1305,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     rangeEnd = DateTime(rangeEnd.year, rangeEnd.month, rangeEnd.day);
 
     final daysToFetch = rangeEnd.difference(rangeStart).inDays + 1;
-    final historyMap = storage.getHistoryMap(days: 30); // Fetch recent history
+    final historyMap = storage.getHistoryMap(days: 365);
     final weeklyData = <Map<String, dynamic>>[];
 
     // Get live steps for today if included in range
@@ -1336,6 +1349,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
       pageBuilder: (context, anim1, anim2) {
         return WeeklyReportDialog(
           weeklyData: weeklyData,
+          allTimeHistory: historyMap,
+          dailyGoal: settings.dailyGoal,
           onDismiss: () => Navigator.pop(context),
         );
       },
@@ -1368,7 +1383,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -1409,13 +1424,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     'Activity Streak',
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                   Text(
                     'Last 14 days',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                       fontSize: 11,
                     ),
                   ),
@@ -1481,7 +1496,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
         Text(
           weekDays[date.weekday % 7],
           style: theme.textTheme.labelSmall?.copyWith(
-            color: AppTheme.textSecondary,
+            color: AppTheme.textSecondaryC(context),
             fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
@@ -1494,12 +1509,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isActive
-                ? Colors.orange.shade50
+                ? Colors.orange.withValues(alpha: 0.15)
                 : isToday
-                ? AppTheme.mintBackground
-                : Colors.grey.shade100,
+                ? AppTheme.subtleBg(context)
+                : AppTheme.subtleBg(context),
             border: isToday && !isActive
-                ? Border.all(color: AppTheme.accentBlack, width: 2)
+                ? Border.all(color: AppTheme.accent(context), width: 2)
                 : null,
             boxShadow: isActive
                 ? [
@@ -1532,8 +1547,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     '${date.day}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: isToday
-                          ? AppTheme.accentBlack
-                          : AppTheme.textSecondary,
+                          ? AppTheme.accent(context)
+                          : AppTheme.textSecondaryC(context),
                       fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 11,
                     ),
@@ -1582,7 +1597,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
       onTap: () => Navigator.pushNamed(context, '/body-stats'),
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: AppTheme.cardDecoration,
+        decoration: AppTheme.cardDecorationOf(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1608,13 +1623,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       Text(
                         'Body Mass Index',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                         ),
                       ),
                       Text(
                         'Tap for TDEE & Weight Tracking',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                           fontSize: 10,
                         ),
                       ),
@@ -1623,7 +1638,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 ),
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                   size: 16,
                 ),
               ],
@@ -1639,7 +1654,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   bmi.toStringAsFixed(1),
                   style: theme.textTheme.displayMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1717,31 +1732,31 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                 Text(
                   '15',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '18.5',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '25',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '30',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Text(
                   '40',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -1771,7 +1786,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                               ? '$heightCm cm'
                               : '${(heightCm / 2.54).toStringAsFixed(1)} in',
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1800,7 +1815,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                               ? '$weightKg kg'
                               : '${(weightKg * 2.205).toStringAsFixed(1)} lbs',
                           style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.textPrimaryC(context),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1828,7 +1843,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardColor(context),
         borderRadius: BorderRadius.circular(16),
         border: isActive
             ? Border.all(color: Colors.blue.shade300, width: 2)
@@ -1848,7 +1863,9 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: isActive ? Colors.blue.shade50 : AppTheme.mintBackground,
+              color: isActive
+                  ? Colors.blue.withValues(alpha: 0.15)
+                  : AppTheme.subtleBg(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
@@ -1867,7 +1884,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   'Streak Freeze',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1878,7 +1895,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: isActive
                         ? Colors.blue.shade600
-                        : AppTheme.textSecondary,
+                        : AppTheme.textSecondaryC(context),
                   ),
                 ),
               ],
@@ -1889,7 +1906,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
+                color: Colors.blue.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -1964,11 +1981,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.blue.shade50, Colors.white],
-            ),
+            color: AppTheme.cardColor(context),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1999,12 +2012,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               const SizedBox(height: 20),
 
               // Title
-              const Text(
+              Text(
                 'Streak Freeze',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.textPrimaryC(context),
                 ),
               ),
               const SizedBox(height: 12),
@@ -2013,9 +2026,13 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppTheme.cardColor(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(
+                    color: AppTheme.textPrimaryC(
+                      context,
+                    ).withValues(alpha: 0.1),
+                  ),
                 ),
                 child: Column(
                   children: [
@@ -2027,12 +2044,12 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                           size: 20,
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Protects your streak, not your steps',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                         ),
@@ -2042,7 +2059,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     Text(
                       'If you missed your goal yesterday, this prevents your streak from resetting to zero. Your step count stays the same.',
                       style: TextStyle(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -2059,7 +2076,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -2073,8 +2090,8 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                     const SizedBox(width: 8),
                     Text(
                       '$kStreakFreezeCost XP',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppTheme.textPrimaryC(context),
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -2092,14 +2109,20 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        side: BorderSide(color: Colors.grey.shade300),
+                        side: BorderSide(
+                          color: AppTheme.textPrimaryC(
+                            context,
+                          ).withValues(alpha: 0.2),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
                         'Cancel',
-                        style: TextStyle(color: AppTheme.textSecondary),
+                        style: TextStyle(
+                          color: AppTheme.textSecondaryC(context),
+                        ),
                       ),
                     ),
                   ),
@@ -2135,7 +2158,7 @@ class _ProfileContentState extends ConsumerState<ProfileContent> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade600,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppTheme.cream,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
                         shape: RoundedRectangleBorder(

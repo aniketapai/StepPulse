@@ -107,6 +107,9 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     historyMap[todayStr] = stepState.todaySteps;
 
+    // Find the current all-time high date
+    final prDate = _getAllTimeHighDate(historyMap);
+
     return SafeArea(
       child: SingleChildScrollView(
         // ClampingScrollPhysics for smoother, more controlled scrolling
@@ -124,7 +127,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                 child: Text(
                   'Progress',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                   ),
                 ),
               ),
@@ -141,7 +144,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             Text(
               'Activity',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 12),
@@ -149,7 +152,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             // Interactive Calendar
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: AppTheme.cardDecoration,
+              decoration: AppTheme.cardDecorationOf(context),
               child: Column(
                 children: [
                   // Month navigation header
@@ -159,7 +162,12 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                   _buildDayLabels(context),
                   const SizedBox(height: 8),
                   // Calendar grid
-                  _buildCalendarGrid(context, historyMap, settings.dailyGoal),
+                  _buildCalendarGrid(
+                    context,
+                    historyMap,
+                    settings.dailyGoal,
+                    prDate,
+                  ),
                   const SizedBox(height: 16),
                   // Legend
                   _buildLegend(context),
@@ -173,7 +181,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             Text(
               'Today\'s Activity',
               style: theme.textTheme.titleMedium?.copyWith(
-                color: AppTheme.textPrimary,
+                color: AppTheme.textPrimaryC(context),
               ),
             ),
             const SizedBox(height: 12),
@@ -183,7 +191,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             const SizedBox(height: 24),
 
             // Steps History section
-            _buildStepsHistorySection(context, ref, settings.dailyGoal),
+            _buildStepsHistorySection(context, ref, settings.dailyGoal, prDate),
 
             const SizedBox(height: 120), // Space for nav bar
           ],
@@ -213,8 +221,8 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
               );
             });
           },
-          icon: const Icon(Icons.chevron_left_rounded),
-          color: AppTheme.accentBlack,
+          icon: Icon(Icons.chevron_left_rounded),
+          color: AppTheme.accent(context),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),
@@ -222,7 +230,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
           monthYear,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
         ),
         IconButton(
@@ -236,8 +244,8 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                   });
                 }
               : null,
-          icon: const Icon(Icons.chevron_right_rounded),
-          color: canGoNext ? AppTheme.accentBlack : Colors.grey.shade300,
+          icon: Icon(Icons.chevron_right_rounded),
+          color: canGoNext ? AppTheme.accent(context) : Colors.grey.shade300,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),
@@ -259,7 +267,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                 child: Text(
                   d,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -271,10 +279,25 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
   }
 
   /// Build calendar grid for the selected month
+  /// Find the date string of the current all-time step record
+  String? _getAllTimeHighDate(Map<String, int> historyMap) {
+    if (historyMap.isEmpty) return null;
+    String? bestDate;
+    int bestSteps = 0;
+    for (final entry in historyMap.entries) {
+      if (entry.value > bestSteps) {
+        bestSteps = entry.value;
+        bestDate = entry.key;
+      }
+    }
+    return bestDate;
+  }
+
   Widget _buildCalendarGrid(
     BuildContext context,
     Map<String, int> historyMap,
     int goal,
+    String? prDate,
   ) {
     final now = DateTime.now();
     final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
@@ -306,6 +329,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
               date.month == now.month &&
               date.day == now.day;
           final isFuture = date.isAfter(now);
+          final isPr = prDate != null && dateStr == prDate && steps > 0;
 
           week.add(
             GestureDetector(
@@ -317,6 +341,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                       steps: steps,
                       goal: goal,
                       isToday: isToday,
+                      isPr: isPr,
                     ),
               child: Container(
                 width: 36,
@@ -324,26 +349,36 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                 margin: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   color: isFuture
-                      ? Colors.grey.shade100
+                      ? AppTheme.subtleBg(context)
+                      : isPr
+                      ? const Color(0xFFFFD700)
                       : _getColorForIntensity(intensity),
                   borderRadius: BorderRadius.circular(8),
-                  border: isToday
-                      ? Border.all(color: AppTheme.accentBlack, width: 2)
+                  border: isPr
+                      ? Border.all(color: const Color(0xFFDAA520), width: 2)
+                      : isToday
+                      ? Border.all(color: AppTheme.accent(context), width: 2)
                       : null,
                 ),
                 child: Center(
-                  child: Text(
-                    '$currentDay',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                      color: isFuture
-                          ? Colors.grey.shade400
-                          : intensity >= 3
-                          ? Colors.white
-                          : AppTheme.textPrimary,
-                    ),
-                  ),
+                  child: isPr
+                      ? const Text('🏆', style: TextStyle(fontSize: 14))
+                      : Text(
+                          '$currentDay',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isToday
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isFuture
+                                ? AppTheme.textSecondaryC(
+                                    context,
+                                  ).withValues(alpha: 0.3)
+                                : intensity >= 3
+                                ? Colors.white
+                                : AppTheme.textPrimaryC(context),
+                          ),
+                        ),
                 ),
               ),
             ),
@@ -370,20 +405,20 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
   }
 
   Color _getColorForIntensity(int intensity) {
-    // Classic theme colors
+    final dark = AppTheme.isDark(context);
     switch (intensity) {
       case 0:
-        return AppTheme.mintBackground;
+        return AppTheme.subtleBg(context);
       case 1:
-        return const Color(0xFFD0D0D0);
+        return dark ? const Color(0xFF3A4A38) : const Color(0xFFC5D9B2);
       case 2:
-        return const Color(0xFFA0A0A0);
+        return dark ? const Color(0xFF4E6B42) : const Color(0xFF9AC07E);
       case 3:
-        return const Color(0xFF606060);
+        return dark ? const Color(0xFF628141) : const Color(0xFF6FA24E);
       case 4:
-        return const Color(0xFF1A1A1A);
+        return dark ? const Color(0xFF8BAE66) : const Color(0xFF4A8530);
       default:
-        return AppTheme.mintBackground;
+        return AppTheme.subtleBg(context);
     }
   }
 
@@ -395,7 +430,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
         Text(
           'Less',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: AppTheme.textSecondary,
+            color: AppTheme.textSecondaryC(context),
           ),
         ),
         const SizedBox(width: 8),
@@ -415,7 +450,29 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
         Text(
           'More',
           style: theme.textTheme.labelSmall?.copyWith(
-            color: AppTheme.textSecondary,
+            color: AppTheme.textSecondaryC(context),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Container(
+          width: 18,
+          height: 18,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFD700),
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: const Color(0xFFDAA520), width: 1),
+          ),
+          child: const Center(
+            child: Text('🏆', style: TextStyle(fontSize: 10)),
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'PR',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: const Color(0xFFDAA520),
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -442,9 +499,9 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
       ),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: AppTheme.cardDecoration.copyWith(
+        decoration: AppTheme.cardDecorationOf(context).copyWith(
           border: Border.all(
-            color: AppTheme.accentBlack.withValues(alpha: 0.2),
+            color: AppTheme.accent(context).withValues(alpha: 0.2),
             width: 1.5,
           ),
         ),
@@ -455,15 +512,15 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
               height: 48,
               decoration: BoxDecoration(
                 color: isGoalMet
-                    ? AppTheme.accentBlack
-                    : AppTheme.mintBackground.withValues(alpha: 0.8),
+                    ? AppTheme.accent(context)
+                    : AppTheme.subtleBg(context).withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 isGoalMet
                     ? Icons.emoji_events_rounded
                     : Icons.directions_walk_rounded,
-                color: isGoalMet ? Colors.white : AppTheme.accentBlack,
+                color: isGoalMet ? Colors.white : AppTheme.accent(context),
                 size: 24,
               ),
             ),
@@ -477,7 +534,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                       Text(
                         'Today',
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.textPrimaryC(context),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -488,13 +545,15 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.accentBlack.withValues(alpha: 0.1),
+                          color: AppTheme.accent(
+                            context,
+                          ).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           DateFormat('MMM d').format(now),
                           style: theme.textTheme.labelSmall?.copyWith(
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                           ),
                         ),
                       ),
@@ -504,13 +563,16 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                   Text(
                     '${_formatNumber(todaySteps)} steps',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textSecondaryC(context),
+            ),
           ],
         ),
       ),
@@ -524,6 +586,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     required int steps,
     required int goal,
     bool isToday = false,
+    bool isPr = false,
   }) {
     final theme = Theme.of(context);
     final isGoalMet = steps >= goal;
@@ -533,24 +596,56 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.cardColor(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              isToday ? Icons.today_rounded : Icons.calendar_today_rounded,
-              color: AppTheme.accentBlack,
+            Row(
+              children: [
+                Icon(
+                  isPr
+                      ? Icons.emoji_events_rounded
+                      : isToday
+                      ? Icons.today_rounded
+                      : Icons.calendar_today_rounded,
+                  color: isPr
+                      ? const Color(0xFFDAA520)
+                      : AppTheme.accent(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    date,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: AppTheme.textPrimaryC(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                date,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textPrimary,
-                  fontWeight: FontWeight.w600,
+            if (isPr) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFDAA520), width: 1),
+                ),
+                child: Text(
+                  '🏆 All-Time Record',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: const Color(0xFFDAA520),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
         content: Column(
@@ -560,7 +655,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppTheme.mintBackground,
+                color: AppTheme.subtleBg(context),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -568,14 +663,14 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                   Text(
                     _formatNumber(steps),
                     style: theme.textTheme.displaySmall?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
                     'steps',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ],
@@ -590,11 +685,11 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor: AppTheme.mintBackground,
+                      backgroundColor: AppTheme.subtleBg(context),
                       valueColor: AlwaysStoppedAnimation(
                         isGoalMet
-                            ? AppTheme.accentBlack
-                            : AppTheme.textSecondary,
+                            ? AppTheme.accent(context)
+                            : AppTheme.textSecondaryC(context),
                       ),
                       minHeight: 8,
                     ),
@@ -604,7 +699,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                 Text(
                   '${(progress * 100).toInt()}%',
                   style: theme.textTheme.labelLarge?.copyWith(
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.textPrimaryC(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -618,7 +713,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                 Text(
                   'Goal: ${_formatNumber(goal)}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.textSecondaryC(context),
                   ),
                 ),
                 Row(
@@ -628,7 +723,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                     Text(
                       '+$xpEarned XP',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppTheme.accentBlack,
+                        color: AppTheme.accent(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -644,7 +739,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -672,7 +767,10 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close', style: TextStyle(color: AppTheme.accentBlack)),
+            child: Text(
+              'Close',
+              style: TextStyle(color: AppTheme.accent(context)),
+            ),
           ),
         ],
       ),
@@ -690,6 +788,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     BuildContext context,
     WidgetRef ref,
     int goal,
+    String? prDate,
   ) {
     final theme = Theme.of(context);
     final history = ref.watch(historyProvider);
@@ -713,7 +812,7 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
           'Steps History',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
         ),
         const SizedBox(height: 12),
@@ -722,7 +821,13 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
           final dateStr = item is Map
               ? item['date'] as String
               : item.date as String;
-          return _buildHistoryItem(context, dateStr, steps, goal);
+          return _buildHistoryItem(
+            context,
+            dateStr,
+            steps,
+            goal,
+            isPr: prDate != null && dateStr == prDate,
+          );
         }),
       ],
     );
@@ -732,8 +837,9 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
     BuildContext context,
     String dateStr,
     int steps,
-    int goal,
-  ) {
+    int goal, {
+    bool isPr = false,
+  }) {
     final theme = Theme.of(context);
     final date = DateTime.parse(dateStr);
     final isGoalMet = steps >= goal;
@@ -763,21 +869,44 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(16),
-        decoration: AppTheme.cardDecoration,
+        decoration: isPr
+            ? BoxDecoration(
+                color: AppTheme.cardColor(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFDAA520), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              )
+            : AppTheme.cardDecorationOf(context),
         child: Row(
           children: [
             Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: isGoalMet
-                    ? AppTheme.accentBlack
-                    : AppTheme.mintBackground,
+                color: isPr
+                    ? const Color(0xFFFFD700)
+                    : isGoalMet
+                    ? AppTheme.accent(context)
+                    : AppTheme.subtleBg(context),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
-                isGoalMet ? Icons.check_rounded : Icons.directions_walk_rounded,
-                color: isGoalMet ? Colors.white : AppTheme.textSecondary,
+                isPr
+                    ? Icons.emoji_events_rounded
+                    : isGoalMet
+                    ? Icons.check_rounded
+                    : Icons.directions_walk_rounded,
+                color: isPr
+                    ? Colors.white
+                    : isGoalMet
+                    ? Colors.white
+                    : AppTheme.textSecondaryC(context),
                 size: 20,
               ),
             ),
@@ -786,20 +915,38 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    dateLabel,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: AppTheme.textPrimary,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        dateLabel,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: AppTheme.textPrimaryC(context),
+                        ),
+                      ),
+                      if (isPr) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '🏆 PR',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: const Color(0xFFDAA520),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   Text(
-                    isGoalMet
+                    isPr
+                        ? '${_formatNumber(steps)} steps • All-time best! 🏆'
+                        : isGoalMet
                         ? '${_formatNumber(steps)} steps • Goal met! 🎉'
                         : '${_formatNumber(steps)} steps • ${_formatNumber(stepsLeft)} left',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: isGoalMet
+                      color: isPr
+                          ? const Color(0xFFDAA520)
+                          : isGoalMet
                           ? Colors.green.shade600
-                          : AppTheme.textSecondary,
+                          : AppTheme.textSecondaryC(context),
                     ),
                   ),
                 ],
@@ -807,7 +954,9 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: AppTheme.textSecondary,
+              color: isPr
+                  ? const Color(0xFFDAA520)
+                  : AppTheme.textSecondaryC(context),
               size: 20,
             ),
           ],
@@ -824,14 +973,14 @@ class _ProgressContentState extends ConsumerState<ProgressContent>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.accentBlack.withValues(alpha: 0.9),
-            AppTheme.accentBlack,
+            AppTheme.accent(context).withValues(alpha: 0.9),
+            AppTheme.accent(context),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.accentBlack.withValues(alpha: 0.2),
+            color: AppTheme.accent(context).withValues(alpha: 0.2),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

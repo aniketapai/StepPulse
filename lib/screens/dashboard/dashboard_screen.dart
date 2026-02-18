@@ -18,11 +18,13 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: SafeArea(
         child: stepState.isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppTheme.accentBlack),
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.accent(context),
+                ),
               )
             : SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
@@ -63,14 +65,14 @@ class DashboardScreen extends ConsumerWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(32),
-          decoration: AppTheme.cardDecoration,
+          decoration: AppTheme.cardDecorationOf(context),
           child: Column(
             children: [
               // Greeting
               Text(
                 _getGreeting(),
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textSecondaryC(context),
                 ),
               ),
               const SizedBox(height: 24),
@@ -80,8 +82,8 @@ class DashboardScreen extends ConsumerWidget {
                 progress: stepState.getProgress(settings.dailyGoal),
                 size: 220,
                 strokeWidth: 12,
-                backgroundColor: AppTheme.mintBackground,
-                progressColor: AppTheme.accentBlack,
+                backgroundColor: AppTheme.subtleBg(context),
+                progressColor: AppTheme.accent(context),
                 child: StepCounterDisplay(
                   steps: stepState.todaySteps,
                   goal: settings.dailyGoal,
@@ -100,7 +102,7 @@ class DashboardScreen extends ConsumerWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -200,13 +202,13 @@ class DashboardScreen extends ConsumerWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.cardColor(context),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 18,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
         ),
 
@@ -220,13 +222,13 @@ class DashboardScreen extends ConsumerWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.cardColor(context),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.settings_outlined,
               size: 20,
-              color: AppTheme.textPrimary,
+              color: AppTheme.textPrimaryC(context),
             ),
           ),
         ),
@@ -236,7 +238,7 @@ class DashboardScreen extends ConsumerWidget {
 
   /// Build bottom navigation bar
   Widget _buildBottomNav(BuildContext context) {
-    const navColor = AppTheme.accentBlack;
+    final navColor = AppTheme.accent(context);
 
     return Container(
       margin: const EdgeInsets.all(20),
@@ -361,8 +363,8 @@ class DashboardScreen extends ConsumerWidget {
             final theme = Theme.of(context);
             return Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppTheme.sheetBg(context),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
@@ -391,7 +393,7 @@ class DashboardScreen extends ConsumerWidget {
                     'Select how many steps you want to achieve each day',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -412,12 +414,12 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? AppTheme.accentBlack
-                                : AppTheme.mintBackground,
+                                ? AppTheme.accent(context)
+                                : AppTheme.subtleBg(context),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
-                                  ? AppTheme.accentBlack
+                                  ? AppTheme.accent(context)
                                   : Colors.grey.shade300,
                             ),
                           ),
@@ -426,7 +428,7 @@ class DashboardScreen extends ConsumerWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: isSelected
                                   ? Colors.white
-                                  : AppTheme.textPrimary,
+                                  : AppTheme.textPrimaryC(context),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -449,7 +451,7 @@ class DashboardScreen extends ConsumerWidget {
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentBlack,
+                        backgroundColor: AppTheme.accent(context),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),

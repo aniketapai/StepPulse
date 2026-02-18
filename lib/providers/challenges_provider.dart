@@ -8,6 +8,8 @@ import 'settings_provider.dart';
 class ChallengesState {
   final List<Challenge> activeChallenges;
   final List<Challenge> pendingChallenges;
+  final List<Challenge> sentChallenges;
+  final List<Challenge> cancelRequestedChallenges;
   final List<Challenge> completedChallenges;
   final bool isLoading;
   final String? error;
@@ -15,6 +17,8 @@ class ChallengesState {
   const ChallengesState({
     this.activeChallenges = const [],
     this.pendingChallenges = const [],
+    this.sentChallenges = const [],
+    this.cancelRequestedChallenges = const [],
     this.completedChallenges = const [],
     this.isLoading = false,
     this.error,
@@ -23,6 +27,8 @@ class ChallengesState {
   ChallengesState copyWith({
     List<Challenge>? activeChallenges,
     List<Challenge>? pendingChallenges,
+    List<Challenge>? sentChallenges,
+    List<Challenge>? cancelRequestedChallenges,
     List<Challenge>? completedChallenges,
     bool? isLoading,
     String? error,
@@ -30,6 +36,9 @@ class ChallengesState {
     return ChallengesState(
       activeChallenges: activeChallenges ?? this.activeChallenges,
       pendingChallenges: pendingChallenges ?? this.pendingChallenges,
+      sentChallenges: sentChallenges ?? this.sentChallenges,
+      cancelRequestedChallenges:
+          cancelRequestedChallenges ?? this.cancelRequestedChallenges,
       completedChallenges: completedChallenges ?? this.completedChallenges,
       isLoading: isLoading ?? this.isLoading,
       error: error,
@@ -57,6 +66,8 @@ class ChallengesNotifier extends StateNotifier<ChallengesState> {
 
       final active = <Challenge>[];
       final pending = <Challenge>[];
+      final sent = <Challenge>[];
+      final cancelRequested = <Challenge>[];
       final completed = <Challenge>[];
 
       for (final c in all) {
@@ -71,16 +82,23 @@ class ChallengesNotifier extends StateNotifier<ChallengesState> {
             }
             break;
           case ChallengeStatus.pending:
-            // Only show pending challenges the user RECEIVED (not created)
             if (_userId != null && c.opponentId == _userId) {
+              // Received challenge
               pending.add(c);
+            } else if (_userId != null && c.creatorId == _userId) {
+              // Sent challenge (waiting for opponent)
+              sent.add(c);
             }
+            break;
+          case ChallengeStatus.cancelRequested:
+            cancelRequested.add(c);
             break;
           case ChallengeStatus.completed:
             completed.add(c);
             break;
           case ChallengeStatus.declined:
-            // Skip declined challenges
+          case ChallengeStatus.cancelled:
+            // Skip
             break;
         }
       }
@@ -88,6 +106,8 @@ class ChallengesNotifier extends StateNotifier<ChallengesState> {
       state = state.copyWith(
         activeChallenges: active,
         pendingChallenges: pending,
+        sentChallenges: sent,
+        cancelRequestedChallenges: cancelRequested,
         completedChallenges: completed,
         isLoading: false,
       );
@@ -133,6 +153,36 @@ class ChallengesNotifier extends StateNotifier<ChallengesState> {
   Future<void> declineChallenge(String challengeId) async {
     try {
       await _firestoreService.declineChallenge(challengeId);
+      await loadChallenges();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Request cancellation of an active challenge
+  Future<void> requestCancel(String challengeId) async {
+    try {
+      await _firestoreService.requestCancelChallenge(challengeId);
+      await loadChallenges();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Confirm cancellation (both agree — no penalty)
+  Future<void> confirmCancel(String challengeId) async {
+    try {
+      await _firestoreService.confirmCancelChallenge(challengeId);
+      await loadChallenges();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Reject cancellation (requester loses XP, challenge resumes)
+  Future<void> rejectCancel(String challengeId) async {
+    try {
+      await _firestoreService.rejectCancelChallenge(challengeId);
       await loadChallenges();
     } catch (e) {
       rethrow;

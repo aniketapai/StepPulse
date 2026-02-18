@@ -216,6 +216,9 @@ class XpNotifier extends StateNotifier<XpData> {
     if (!goalBonusAwarded && todaySteps >= goal) {
       goalBonus = kGoalBonusXp;
       await _storage.setGoalBonusAwarded(true);
+
+      // Recalculate streaks now that today's goal is met
+      _recalculateStreakStats();
     }
 
     // Update XP state
@@ -360,6 +363,19 @@ class XpNotifier extends StateNotifier<XpData> {
     );
 
     // Persist
+    await _storage.saveXpData(state.toMap());
+  }
+
+  /// Award XP for winning a challenge
+  Future<void> awardChallengeXp(int amount) async {
+    state = state.copyWith(totalXp: state.totalXp + amount);
+    await _storage.saveXpData(state.toMap());
+  }
+
+  /// Deduct XP (e.g. for cancel penalty)
+  Future<void> deductXp(int amount) async {
+    final newXp = (state.totalXp - amount).clamp(0, state.totalXp);
+    state = state.copyWith(totalXp: newXp);
     await _storage.saveXpData(state.toMap());
   }
 

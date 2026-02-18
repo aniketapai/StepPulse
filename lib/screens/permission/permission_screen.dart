@@ -102,13 +102,15 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: AppTheme.accentBlack),
+              ? Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.accent(context),
+                  ),
                 )
               : _buildPermissionUI(context),
         ),
@@ -148,8 +150,8 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
       );
     }
 
-    return const Center(
-      child: CircularProgressIndicator(color: AppTheme.accentBlack),
+    return Center(
+      child: CircularProgressIndicator(color: AppTheme.accent(context)),
     );
   }
 
@@ -164,18 +166,18 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     return Center(
       child: Container(
         padding: const EdgeInsets.all(40),
-        decoration: AppTheme.cardDecoration,
+        decoration: AppTheme.cardDecorationOf(context),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Icon
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: AppTheme.mintBackground,
+              decoration: BoxDecoration(
+                color: AppTheme.subtleBg(context),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 48, color: AppTheme.accentBlack),
+              child: Icon(icon, size: 48, color: AppTheme.accent(context)),
             ),
             const SizedBox(height: 32),
 
@@ -211,7 +213,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                 onPressed: _checkPermission,
                 child: Text(
                   'Try Again',
-                  style: TextStyle(color: AppTheme.textSecondary),
+                  style: TextStyle(color: AppTheme.textSecondaryC(context)),
                 ),
               ),
             ],

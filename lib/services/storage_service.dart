@@ -313,6 +313,18 @@ class StorageService {
     await _settingsBox.put(_dashboardThemeKey, theme);
   }
 
+  // ============ Dark Mode ============
+
+  static const String _darkModeKey = 'dark_mode';
+
+  /// Get dark mode setting (0 = system, 1 = light, 2 = dark)
+  int get darkMode => _settingsBox.get(_darkModeKey, defaultValue: 0) as int;
+
+  /// Set dark mode setting
+  Future<void> setDarkMode(int mode) async {
+    await _settingsBox.put(_darkModeKey, mode);
+  }
+
   /// Reset all progress (XP, history, but keep profile & settings)
   Future<void> resetAllProgress() async {
     // Clear history

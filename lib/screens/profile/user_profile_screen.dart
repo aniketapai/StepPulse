@@ -67,21 +67,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppTheme.mintBackground,
+      backgroundColor: AppTheme.subtleBg(context),
       appBar: AppBar(
-        backgroundColor: AppTheme.mintBackground,
+        backgroundColor: AppTheme.subtleBg(context),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_rounded,
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
           ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.displayName,
           style: theme.textTheme.titleLarge?.copyWith(
-            color: AppTheme.textPrimary,
+            color: AppTheme.textPrimaryC(context),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -98,14 +98,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     Icon(
                       Icons.error_outline_rounded,
                       size: 64,
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                   ],
@@ -153,15 +153,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: AppTheme.cardDecoration,
+              decoration: AppTheme.cardDecorationOf(context),
               child: Column(
                 children: [
                   // Avatar
                   Container(
                     width: 100,
                     height: 100,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.accentBlack,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent(context),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -176,7 +176,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   Text(
                     name,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -184,7 +184,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   Text(
                     'Member for $memberDays days',
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
 
@@ -206,7 +206,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: AppTheme.cardDecoration,
+              decoration: AppTheme.cardDecorationOf(context),
               child: Column(
                 children: [
                   // Level badge
@@ -216,7 +216,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.accentBlack,
+                      color: AppTheme.accent(context),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -234,13 +234,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     '$totalXp',
                     style: theme.textTheme.displayMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.textPrimaryC(context),
                     ),
                   ),
                   Text(
                     'Total XP Earned',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.textSecondaryC(context),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -256,7 +256,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                           child: Stack(
                             children: [
                               Container(
-                                color: AppTheme.textSecondary.withValues(
+                                color: AppTheme.textSecondaryC(context).withValues(
                                   alpha: 0.2,
                                 ),
                               ),
@@ -264,7 +264,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                 widthFactor: levelProgress,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: AppTheme.accentBlack,
+                                    color: AppTheme.accent(context),
                                     borderRadius: BorderRadius.circular(5),
                                   ),
                                 ),
@@ -277,7 +277,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       Text(
                         '${xpForNextLevel - totalXp} XP to Level ${level + 1}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.textSecondaryC(context),
                         ),
                       ),
                     ],
@@ -292,15 +292,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             if (totalDaysActive > 0)
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: AppTheme.cardDecoration,
+                decoration: AppTheme.cardDecorationOf(context),
                 child: Row(
                   children: [
                     Expanded(
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.local_fire_department_rounded,
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                             size: 28,
                           ),
                           const SizedBox(height: 8),
@@ -308,14 +308,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             '$currentStreak',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           Text(
                             'Current\nStreak',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -324,14 +324,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     Container(
                       width: 1,
                       height: 60,
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                     ),
                     Expanded(
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.emoji_events_rounded,
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                             size: 28,
                           ),
                           const SizedBox(height: 8),
@@ -339,14 +339,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             '$longestStreak',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           Text(
                             'Longest\nStreak',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -355,14 +355,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     Container(
                       width: 1,
                       height: 60,
-                      color: AppTheme.mintBackground,
+                      color: AppTheme.subtleBg(context),
                     ),
                     Expanded(
                       child: Column(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.calendar_today_rounded,
-                            color: AppTheme.accentBlack,
+                            color: AppTheme.accent(context),
                             size: 28,
                           ),
                           const SizedBox(height: 8),
@@ -370,14 +370,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             '$totalDaysActive',
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textPrimaryC(context),
                             ),
                           ),
                           Text(
                             'Days\nActive',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.textSecondaryC(context),
                             ),
                           ),
                         ],
@@ -390,19 +390,19 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               // No activity yet message
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: AppTheme.cardDecoration,
+                decoration: AppTheme.cardDecorationOf(context),
                 child: Column(
                   children: [
                     Icon(
                       Icons.fitness_center_rounded,
                       size: 48,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                      color: AppTheme.textSecondaryC(context).withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'No activity yet',
                       style: theme.textTheme.titleSmall?.copyWith(
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.textSecondaryC(context),
                       ),
                     ),
                   ],
@@ -549,7 +549,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final totalSteps = stats?['totalStepsAllTime'] as int? ?? 0;
 
     // Check unlock conditions (simplified - we don't have full history data)
+    // Note: early_bird and overachiever require real-time data, can't check for friends
     if (totalDaysActive >= 1) unlocked.add('first_flame');
+    if (totalDaysActive >= 7) unlocked.add('goal_getter');
     if (totalSteps >= 42195) unlocked.add('marathon');
     if (longestStreak >= 7) unlocked.add('week_warrior');
     if (longestStreak >= 30) unlocked.add('month_master');
@@ -557,6 +559,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     if (totalSteps >= 100000) unlocked.add('club_100k');
     if (totalSteps >= 500000) unlocked.add('half_million');
     if (totalSteps >= 1000000) unlocked.add('millionaire');
+    if (longestStreak >= 3) unlocked.add('consistent');
 
     return unlocked;
   }
@@ -582,7 +585,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.mintBackground.withValues(alpha: 0.5),
+              color: AppTheme.subtleBg(context).withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -591,13 +594,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 Icon(
                   Icons.emoji_events_rounded,
                   size: 16,
-                  color: AppTheme.accentBlack,
+                  color: AppTheme.accent(context),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '$unlockedCount / ${_badgeDefinitions.length} Badges',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -608,7 +611,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   child: Icon(
                     Icons.keyboard_arrow_down_rounded,
                     size: 18,
-                    color: AppTheme.accentBlack,
+                    color: AppTheme.accent(context),
                   ),
                 ),
               ],

@@ -18,16 +18,8 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Set status bar color to match app theme (mintBackground)
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Color(0xFFD5E8E3), // mintBackground
-      statusBarIconBrightness:
-          Brightness.dark, // Dark icons for light background
-      systemNavigationBarColor: Color(0xFFD5E8E3), // mintBackground
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // System UI overlay style is handled dynamically by AnnotatedRegion
+  // in MainNavShell based on the current theme mode.
 
   // Initialize Hive for local storage
   await Hive.initFlutter();

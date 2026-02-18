@@ -1057,7 +1057,7 @@ class FirestoreService {
     }
   }
 
-  /// Complete a challenge and determine the winner
+  /// Complete a challenge and determine the winner, awarding XP
   Future<void> completeChallenge(String challengeId) async {
     try {
       final doc = await _challenges.doc(challengeId).get();
@@ -1075,9 +1075,80 @@ class FirestoreService {
         'status': ChallengeStatus.completed.name,
         'winnerId': winnerId,
       });
+
+      // Award XP to the winner
+      if (winnerId != null) {
+        await _users.doc(winnerId).update({
+          'stats.totalXp': FieldValue.increment(kChallengeWinXp),
+        });
+        print('🏆 Awarded $kChallengeWinXp XP to winner: $winnerId');
+      }
+
       print('✅ Completed challenge: $challengeId, winner: $winnerId');
     } catch (e) {
       print('⚠️ Error completing challenge: $e');
+      rethrow;
+    }
+  }
+
+  /// Request cancellation of an active challenge
+  Future<void> requestCancelChallenge(String challengeId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('Not logged in');
+
+    try {
+      await _challenges.doc(challengeId).update({
+        'status': ChallengeStatus.cancelRequested.name,
+        'cancelRequestedBy': user.uid,
+      });
+      print('🚫 Cancel requested for challenge: $challengeId');
+    } catch (e) {
+      print('⚠️ Error requesting cancel: $e');
+      rethrow;
+    }
+  }
+
+  /// Confirm cancellation (both parties agree) — challenge dissolved, no penalty
+  Future<void> confirmCancelChallenge(String challengeId) async {
+    try {
+      await _challenges.doc(challengeId).update({
+        'status': ChallengeStatus.cancelled.name,
+      });
+      print('✅ Challenge cancelled by mutual agreement: $challengeId');
+    } catch (e) {
+      print('⚠️ Error confirming cancel: $e');
+      rethrow;
+    }
+  }
+
+  /// Reject cancellation — requester loses XP penalty, challenge reverts to active
+  Future<void> rejectCancelChallenge(String challengeId) async {
+    try {
+      final doc = await _challenges.doc(challengeId).get();
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data == null) throw Exception('Challenge not found');
+
+      final requesterId = data['cancelRequestedBy'] as String?;
+
+      // Revert to active
+      await _challenges.doc(challengeId).update({
+        'status': ChallengeStatus.active.name,
+        'cancelRequestedBy': FieldValue.delete(),
+      });
+
+      // Deduct XP from the person who requested cancel
+      if (requesterId != null) {
+        await _users.doc(requesterId).update({
+          'stats.totalXp': FieldValue.increment(-kChallengeCancelPenalty),
+        });
+        print(
+          '💸 Deducted $kChallengeCancelPenalty XP from cancel requester: $requesterId',
+        );
+      }
+
+      print('✅ Cancel rejected, challenge resumed: $challengeId');
+    } catch (e) {
+      print('⚠️ Error rejecting cancel: $e');
       rethrow;
     }
   }
